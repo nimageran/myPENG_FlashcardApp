@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PENG NPPE Flashcards</title>
+    <meta name="description" content="PENG NPPE exam flashcard study app">
+    <meta name="theme-color" content="#1E40AF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PENG NPPE">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1E3A8A 0%, #3730A3 50%, #1E40AF 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E40AF, #1E3A8A);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .stats {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-indicator {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 25px 20px;
+            min-height: calc(100vh - 120px);
+        }
+
+        /* Study Screen */
+        .flashcard-container {
+            width: 100%;
+            height: 320px;
+            perspective: 1000px;
+            margin: 25px 0;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s ease;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-side {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 25px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            color: white;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #10B981, #047857);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .card-image {
+            max-width: 100%;
+            max-height: 120px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .card-text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #E5E7EB;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3B82F6, #1D4ED8);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        /* Control Buttons */
+        .control-section {
+            margin: 20px 0;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: #3B82F6;
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #2563EB;
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6B7280;
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+
+        .btn-success {
+            background: #10B981;
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        .btn-warning {
+            background: #F59E0B;
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-warning:hover {
+            background: #D97706;
+        }
+
+        /* Knowledge Tracking */
+        .knowledge-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-small {
+            padding: 12px;
+            font-size: 0.9rem;
+            border-radius: 10px;
+        }
+
+        .btn-know {
+            background: #10B981;
+            color: white;
+        }
+
+        .btn-partial {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .btn-unknown {
+            background: #EF4444;
+            color: white;
+        }
+
+        /* Settings and Stats */
+        .settings-panel {
+            background: #F8FAFC;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #E2E8F0;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #CBD5E0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #3B82F6;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 10px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B7280;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        .empty-state p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #E5E7EB;
+            border-top: 4px solid #3B82F6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .btn {
+                padding: 14px 16px;
+                font-size: 0.95rem;
+            }
+            
+            .flashcard-container {
+                height: 280px;
+            }
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1F2937;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            max-width: 90%;
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-btn {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ PENG NPPE Flashcards</h1>
+            <div class="stats">
+                <span id="card-stats">Loading cards...</span>
+                <span class="mode-indicator" id="mode-indicator">SEQUENTIAL</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="app-content">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div id="install-prompt" class="install-prompt">
+        <span>📱 Install this app for better experience!</span>
+        <button class="install-btn" onclick="installApp()">Install</button>
+        <button class="install-btn" onclick="dismissInstallPrompt()" style="background: #6B7280;">Later</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        // App State
+        let allCards = [];
+        let currentCards = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let isRandomMode = JSON.parse(localStorage.getItem('pengRandomMode')) || false;
+        let knowledgeTracker = JSON.parse(localStorage.getItem('pengKnowledge')) || {};
+        let studyStats = JSON.parse(localStorage.getItem('pengStats')) || {
+            totalStudied: 0,
+            knownCards: 0,
+            partialCards: 0,
+            unknownCards: 0,
+            streak: 0,
+            lastStudy: null
+        };
+        let deferredPrompt;
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCardsFromCSV();
+            updateModeIndicator();
+            
+            // PWA install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('install-prompt').classList.add('show');
+            });
+        });
+
+        // Load CSV from assets folder
+        async function loadCardsFromCSV() {
+            try {
+                const response = await fetch('./assets/cards.csv');
+                if (!response.ok) {
+                    throw new Error(`CSV file not found (${response.status})`);
+                }
+                
+                const csvText = await response.text();
+                await parseCSV(csvText);
+                
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                showEmptyState('Could not load cards.csv', 'Make sure cards.csv exists in the assets folder with your PENG NPPE questions.');
+            }
+        }
+
+        // Parse CSV data
+        async function parseCSV(csvText) {
+            try {
+                const results = Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: false,
+                    delimitersToGuess: [',', '\t', ';', '|']
+                });
+
+                if (results.errors.length > 0) {
+                    throw new Error('CSV parsing error: ' + results.errors[0].message);
+                }
+
+                const data = results.data;
+                if (data.length === 0) {
+                    throw new Error('CSV file is empty');
+                }
+
+                // Detect columns
+                const headers = Object.keys(data[0]);
+                let frontCol = null, backCol = null, imageCol = null;
+
+                // Common column names
+                const frontNames = ['front', 'question', 'q', 'term', 'problem'];
+                const backNames = ['back', 'answer', 'a', 'solution', 'explanation'];
+                const imageNames = ['image', 'img', 'picture', 'photo'];
+
+                for (let header of headers) {
+                    const lowerHeader = header.toLowerCase().trim();
+                    if (frontNames.includes(lowerHeader)) frontCol = header;
+                    if (backNames.includes(lowerHeader)) backCol = header;
+                    if (imageNames.includes(lowerHeader)) imageCol = header;
+                }
+
+                // Use first two columns if not detected
+                if (!frontCol || !backCol) {
+                    if (headers.length >= 2) {
+                        frontCol = headers[0];
+                        backCol = headers[1];
+                        if (headers.length >= 3 && !imageCol) imageCol = headers[2];
+                    } else {
+                        throw new Error('CSV needs at least 2 columns');
+                    }
+                }
+
+                // Process data
+                allCards = data.filter(row => 
+                    row[frontCol] && row[backCol] && 
+                    row[frontCol].toString().trim() && 
+                    row[backCol].toString().trim()
+                ).map((row, index) => ({
+                    id: index,
+                    front: row[frontCol].toString().trim(),
+                    back: row[backCol].toString().trim(),
+                    image: imageCol && row[imageCol] ? row[imageCol].toString().trim() : null
+                }));
+
+                if (allCards.length === 0) {
+                    throw new Error('No valid cards found in CSV');
+                }
+
+                // Initialize study session
+                resetStudySession();
+                renderStudyInterface();
+
+            } catch (error) {
+                showEmptyState('Error processing CSV', error.message);
+            }
+        }
+
+        // Reset study session
+        function resetStudySession() {
+            currentIndex = 0;
+            isFlipped = false;
+            
+            if (isRandomMode) {
+                currentCards = [...allCards].sort(() => Math.random() - 0.5);
+            } else {
+                currentCards = [...allCards];
+            }
+        }
+
+        // Render main study interface
+        function renderStudyInterface() {
+            if (currentCards.length === 0) {
+                showEmptyState('No cards available', 'Check your CSV file format.');
+                return;
+            }
+
+            const card = currentCards[currentIndex];
+            const progress = Math.round(((currentIndex) / currentCards.length) * 100);
+            
+            document.getElementById('app-content').innerHTML = `
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span>Card ${currentIndex + 1} of ${currentCards.length}</span>
+                        <span>${progress}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+
+                <div class="flashcard-container">
+                    <div class="flashcard" id="flashcard" onclick="flipCard()">
+                        <div class="flashcard-side flashcard-front">
+                            ${card.image ? `<img src="${card.image}" alt="Question Image" class="card-image" onerror="this.style.display='none'">` : ''}
+                            <div class="card-text">${card.front}</div>
+                        </div>
+                        <div class="flashcard-side flashcard-back">
+                            <div class="card-text">${card.back}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="control-row">
+                        <button class="btn btn-secondary" onclick="previousCard()" ${currentIndex === 0 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="btn btn-primary" onclick="flipCard()">
+                            ${isFlipped ? '🔄 Flip Back' : '🔄 Show Answer'}
+                        </button>
+                        <button class="btn btn-secondary" onclick="nextCard()" ${currentIndex === currentCards.length - 1 ? 'disabled' : ''}>
+                            Next →
+                        </button>
+                    </div>
+
+                    <div class="knowledge-buttons">
+                        <button class="btn btn-know btn-small" onclick="markKnowledge('know')">
+                            ✅ Know It
+                        </button>
+                        <button class="btn btn-partial btn-small" onclick="markKnowledge('partial')">
+                            ⚠️ Partial
+                        </button>
+                        <button class="btn btn-unknown btn-small" onclick="markKnowledge('unknown')">
+                            ❌ Don't Know
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-panel">
+                    <div class="setting-row">
+                        <span><strong>Random Mode</strong><br><small>Shuffle card order</small></span>
+                        <div class="toggle-switch ${isRandomMode ? 'active' : ''}" onclick="toggleRandomMode()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span><strong>Study Progress</strong></span>
+                        <span><strong>${getKnownCount()}/${allCards.length}</strong> mastered</span>
+                    </div>
+                    <div class="setting-row">
+                        <button class="btn btn-warning" onclick="resetProgress()" style="flex: none; padding: 8px 16px;">
+                            🔄 Reset Session
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadCardsFromCSV()" style="flex: none; padding: 8px 16px;">
+                            📁 Reload CSV
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            updateStats();
+        }
+
+        // Card navigation
+        function flipCard() {
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+            
+            // Update button text
+            const flipBtn = document.querySelector('.btn-primary');
+            if (flipBtn) {
+                flipBtn.innerHTML = isFlipped ? '🔄 Flip Back' : '🔄 Show Answer';
+            }
+        }
+
+        function nextCard() {
+            if (currentIndex < currentCards.length - 1) {
+                currentIndex++;
+                isFlipped = false;
+                renderStudyInterface();
+            } else {
+                // End of session
+                alert(`🎉 Session Complete!\n\nYou've reviewed all ${currentCards.length} cards.\nGreat job studying for your PENG NPPE exam!`);
+                resetStudySession();
+                renderStudyInterface();
+            }
+        }
+
+        function previousCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                isFlipped = false;
+                renderStudyInterface();
+            }
+        }
+
+        // Knowledge tracking
+        function markKnowledge(level) {
+            const cardId = currentCards[currentIndex].id;
+            knowledgeTracker[cardId] = level;
+            localStorage.setItem('pengKnowledge', JSON.stringify(knowledgeTracker));
+            
+            // Update stats
+            studyStats.totalStudied++;
+            switch(level) {
+                case 'know': studyStats.knownCards++; break;
+                case 'partial': studyStats.partialCards++; break;
+                case 'unknown': studyStats.unknownCards++; break;
+            }
+            studyStats.lastStudy = new Date().toISOString();
+            localStorage.setItem('pengStats', JSON.stringify(studyStats));
+            
+            updateStats();
+            
+            // Auto advance to next card
+            setTimeout(() => {
+                nextCard();
+            }, 500);
+        }
+
+        // Mode controls
+        function toggleRandomMode() {
+            isRandomMode = !isRandomMode;
+            localStorage.setItem('pengRandomMode', JSON.stringify(isRandomMode));
+            updateModeIndicator();
+            resetStudySession();
+            renderStudyInterface();
+        }
+
+        function updateModeIndicator() {
+            const indicator = document.getElementById('mode-indicator');
+            if (indicator) {
+                indicator.textContent = isRandomMode ? '🎲 RANDOM' : '📋 SEQUENTIAL';
+            }
+        }
+
+        function resetProgress() {
+            if (confirm('Reset your study progress? This will clear all knowledge tracking.')) {
+                knowledgeTracker = {};
+                studyStats = {
+                    totalStudied: 0,
+                    knownCards: 0,
+                    partialCards: 0,
+                    unknownCards: 0,
+                    streak: 0,
+                    lastStudy: null
+                };
+                localStorage.removeItem('pengKnowledge');
+                localStorage.removeItem('pengStats');
+                resetStudySession();
+                renderStudyInterface();
+            }
+        }
+
+        // Stats
+        function updateStats() {
+            const statsElement = document.getElementById('card-stats');
+            if (statsElement) {
+                const known = getKnownCount();
+                statsElement.textContent = `${known}/${allCards.length} mastered • ${studyStats.totalStudied} studied`;
+            }
+        }
+
+        function getKnownCount() {
+            return Object.values(knowledgeTracker).filter(level => level === 'know').length;
+        }
+
+        // Empty state
+        function showEmptyState(title, message) {
+            document.getElementById('app-content').innerHTML = `
+                <div class="empty-state">
+                    <h3>⚠️ ${title}</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="loadCardsFromCSV()">
+                        🔄 Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+        // PWA Installation
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    deferredPrompt = null;
+                    dismissInstallPrompt();
+                });
+            }
+        }
+
+        function dismissInstallPrompt() {
+            document.getElementById('install-prompt').classList.remove('show');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case ' ':
+                case 'Enter':
+                    e.preventDefault();
+                    flipCard();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    previousCard();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    nextCard();
+                    break;
+                case '1':
+                    markKnowledge('know');
+                    break;
+                case '2':
+                    markKnowledge('partial');
+                    break;
+                case '3':
+                    markKnowledge('unknown');
+                    break;
+                case 'r':
+                case 'R':
+                    toggleRandomMode();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
