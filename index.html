@@ -154,6 +154,7 @@ const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null;
 let requeueDistance = parseInt(localStorage.getItem(REQUEUE_KEY)||'10',10);
 let pending = []; // items: {id, due}
+let isFlipping = false;
 
 const $=s=>document.querySelector(s);
 const face=$('#face'), img=$('#img'), status=$('#status'), startBtn=$('#start'), openBtn=$('#openControls'), sheet=$('#sheet');
@@ -168,13 +169,11 @@ sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
 function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
 (async function init(){
-  // load audio prefs
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
 
   await loadVoices(); populateVoiceSelect();
 
-  // requeue selector + persistence
   if(requeueSel){
     requeueSel.value = String(requeueDistance);
     requeueSel.addEventListener('change', ()=>{
@@ -208,14 +207,16 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip on the whole card (iPhone-friendly). Ignore taps on controls.
-['main.card', '#face', '#img'].forEach(sel => {
-  const el = document.querySelector(sel);
-  if (el) el.addEventListener('click', (e) => {
-    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-    flip();
-  });
-});
+// Tap-to-flip: single listener on the card (prevents double flip from bubbling)
+document.querySelector('main.card')?.addEventListener('click', (e) => {
+  if (
+    e.target.closest('.markbar') ||  // green/red buttons
+    e.target.closest('.fabbar')   ||  // Flip/Next bar
+    e.target.closest('#openControls') || // ⋯ button
+    e.target.closest('#sheet')        // bottom sheet
+  ) return;
+  flip();
+}, { passive: true });
 
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){
@@ -252,14 +253,15 @@ function next(){
 }
 
 function flip(){
-  if(cursor<0) return;
-  if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
+  if (cursor < 0 || isFlipping) return;
+  if (!cardEl) { showingBack = !showingBack; renderFace('flip'); return; }
+  isFlipping = true;
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
     showingBack = !showingBack; renderFace('flip');
     cardEl.classList.remove('flip-phase');
     cardEl.classList.add('flip-reset');
-    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); }, 240);
+    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); isFlipping=false; }, 240);
   }, 160);
 }
 
