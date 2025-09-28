@@ -17,8 +17,8 @@
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:#fff}
 
     main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px)}
-    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none}
-    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border)}
+    .big{$1 cursor:pointer;}
+    .img{$1 cursor:pointer;}
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
@@ -203,6 +203,15 @@ function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
 function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
+// Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
+['#face', '#img'].forEach(sel => {
+  const el = document.querySelector(sel);
+  if (el) el.addEventListener('click', (e) => {
+    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
+    flip();
+  });
+});
+
 </script>
 </body>
 </html>
