@@ -222,10 +222,11 @@ function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.mat
 function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 // Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
-['#face', '#img', 'main.card'].forEach(sel => {
+['#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
     if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
+    e.stopPropagation(); // prevent double-trigger from bubbling
     flip();
   });
 });
