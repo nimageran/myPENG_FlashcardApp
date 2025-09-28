@@ -22,20 +22,17 @@
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
-    /* Bottom-in-card mark bar (green/red) */
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
     .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
     .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
 
-    /* Floating action bar: Flip/Next only */
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
 
     .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
-    /* Bottom sheet controls */
     .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
@@ -77,7 +74,6 @@
     <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
 
-    <!-- At card bottom -->
     <div class="markbar">
       <button id="again" class="btn bad">I don’t know</button>
       <button id="good" class="btn ok">I know</button>
@@ -85,13 +81,11 @@
   </main>
 </div>
 
-<!-- Floating action bar: only Flip/Next for speed -->
 <div class="fabbar">
   <button id="flip" class="btn">Flip</button>
   <button id="next" class="btn">Next</button>
 </div>
 
-<!-- Bottom sheet with controls -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
   <div class="content">
@@ -123,10 +117,10 @@
         </div>
       </div>
       <div class="fieldset">
-        <label class="label">Re‑show “I don’t know” after</label>
+        <label class="label">Re-show “I don’t know” after</label>
         <select id="requeueSel" class="select">
           <option value="5">5 cards</option>
-          <option value="10">10 cards</option>
+          <option value="10" selected>10 cards</option>
           <option value="20">20 cards</option>
           <option value="50">50 cards</option>
         </select>
@@ -149,8 +143,7 @@
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue =====
-// Kept: image-on-back, ID=card<number>, audio delay, bottom-sheet controls
+// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
 
 const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
@@ -169,17 +162,19 @@ const modeSel=$('#mode'), skipKnownChk=$('#skipKnown'), idxLabel=$('#indexLabel'
 const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#statUnknown'), statSeen=$('#statSeen');
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
-let suppressUntilClick = 0; // prevent double-flip (e.g., tap fires twice or after swipe)
 
 openBtn.addEventListener('click', ()=> toggleSheet(true));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
 function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
 (async function init(){
-  // Load audio prefs
+  // load audio prefs
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
-  // Requeue select init + persistence
+
+  await loadVoices(); populateVoiceSelect();
+
+  // requeue selector + persistence
   if(requeueSel){
     requeueSel.value = String(requeueDistance);
     requeueSel.addEventListener('change', ()=>{
@@ -188,44 +183,22 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
     });
   }
 
-  // Tap-to-flip on the card only (avoid double triggers and clicks from buttons/sheet)
-if (cardEl) {
-  cardEl.addEventListener('click', (e) => {
-    if (
-      e.target.closest('.markbar') ||
-      e.target.closest('.fabbar') ||
-      e.target.closest('#openControls') ||
-      e.target.closest('#sheet') ||
-      e.target.closest('button')
-    ) return;
-    if (Date.now() < suppressUntilClick) return; // debounce / post-swipe guard
-    suppressUntilClick = Date.now() + 250;
-    flip();
-  });
-}
-
-  // Load voices and populate
-  await loadVoices();
-  populateVoiceSelect();
-
   // Load CSV deck
   try{
-    const text = await (await fetch(CSV_URL,{cache:'no-store'})).text();
+    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
     const rows = parseCSV(text); if(!rows.length) throw new Error('CSV empty');
-    const header = rows[0].map?.(x=>String(x||'').toLowerCase().trim());
+    const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
     const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
-    const data = (hasHeader? rows.slice(1):rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
+    const data = (hasHeader? rows.slice(1) : rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
     deck = data.map((r,i)=> ({ id: normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
-    // ensure unique ids if duplicates in CSV
     const seen = new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
 
-    loadProgress();
-    status.textContent='Ready'; startBtn.classList.remove('hide');
-    face.innerHTML='Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. ⋯ opens options.';
+    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide');
+    face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. Re-show setting is under ⋯';
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// Button actions
+// Buttons & shortcuts
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -233,21 +206,41 @@ $('#good').addEventListener('click', ()=> grade(true));
 $('#again').addEventListener('click', ()=> grade(false));
 $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
 
-// Keyboard shortcuts (desktop)
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
+// Tap-to-flip on the whole card (iPhone-friendly). Ignore taps on controls.
+['main.card', '#face', '#img'].forEach(sel => {
+  const el = document.querySelector(sel);
+  if (el) el.addEventListener('click', (e) => {
+    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
+    flip();
+  });
+});
+
 function start(){ cursor=-1; showingBack=false; next() }
-function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
+function eligibleIndices(){
+  const skip=skipKnownChk.checked; const mode=modeSel.value;
+  let idx=deck.map((_,i)=>i);
+  if(skip) idx=idx.filter(i=>!deck[i].known);
+  if(mode==='ordered'){
+    const s=Math.max(cursor+1,0);
+    const tail=idx.filter(i=>i>=s);
+    const head=idx.filter(i=>i<s);
+    return tail.length?tail:head;
+  }
+  return idx;
+}
+
 function next(){
   if(!deck.length) return;
-  // 1) Due queued card takes priority
+  // 1) If any queued unknown is due, show it now (takes priority)
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
     deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
     return;
   }
-  // 2) Otherwise choose normally
+  // 2) Otherwise, pick per mode/skipKnown
   const choices = eligibleIndices();
   if(!choices.length){
     face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
@@ -261,7 +254,6 @@ function next(){
 function flip(){
   if(cursor<0) return;
   if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
-  // Animated flip: rotate to 90°, swap, rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
     showingBack = !showingBack; renderFace('flip');
@@ -276,22 +268,54 @@ function grade(known){
   const id = deck[cursor].id;
   if(known){
     deck[cursor].known = true;
-    pending = pending.filter(p=>p.id!==id); // remove from queue if present
+    pending = pending.filter(p=>p.id!==id); // if queued, drop it
   } else {
     deck[cursor].known = false;
-    queueCard(id); // schedule to come back
+    queueCard(id); // schedule to come back after N cards
   }
   saveProgress(); updateStats(); next();
 }
 
-function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML= showingBack? escape(c.back):escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
+function renderFace(trigger){
+  if(cursor<0){ face.textContent='Press Start'; return }
+  const c=deck[cursor];
+  idxLabel.textContent=c.id;
+  face.innerHTML= showingBack? escape(c.back):escape(c.front);
+  if(showingBack){ showImageForId(c.id) } else { hideImage() }
+  updateStats(); autoSpeakCurrent(trigger);
+}
 
 function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt='' }
-function showImageForId(id){ const exts=['png','jpg','jpeg','webp','svg']; let i=0; const tryNext=()=>{ if(i>=exts.length){ hideImage(); return } const src=`assets/images/${id}.${exts[i++]}`; img.onerror=tryNext; img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') }; img.src=src }; tryNext() }
+function showImageForId(id){
+  const exts=['png','jpg','jpeg','webp','svg']; let i=0;
+  const tryNext=()=>{
+    if(i>=exts.length){ hideImage(); return }
+    const src=`assets/images/${id}.${exts[i++]}`;
+    img.onerror=tryNext;
+    img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') };
+    img.src=src;
+  };
+  tryNext();
+}
 
-function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.known).length; const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0); statTotal&& (statTotal.textContent=total); statKnown&& (statKnown.textContent=known); statUnknown&& (statUnknown.textContent=Math.max(0,total-known)); statSeen&& (statSeen.textContent=seen) }
+function updateStats(){
+  const total=deck.length;
+  const known=deck.filter(c=>c.known).length;
+  const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0);
+  statTotal&& (statTotal.textContent=total);
+  statKnown&& (statKnown.textContent=known);
+  statUnknown&& (statUnknown.textContent=Math.max(0,total-known));
+  statSeen&& (statSeen.textContent=seen);
+}
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
-function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
+function loadProgress(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+    const arr=JSON.parse(raw);
+    const map=new Map(arr.map(x=>[x.id,x]));
+    deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } });
+  }catch(e){}
+}
 
 // Swipe-to-grade (left = don't know, right = know) for touch
 (function(){
@@ -318,10 +342,10 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
     if(!active) return; active=false;
     if(dx > THRESH){
       cardEl.classList.remove('swipe-left'); cardEl.classList.add('swipe-right');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-right'); endSwipe(); suppressUntilClick = Date.now()+500; grade(true); }, 240);
+      setTimeout(()=>{ cardEl.classList.remove('swipe-right'); endSwipe(); grade(true); }, 240);
     } else if(dx < -THRESH){
       cardEl.classList.remove('swipe-right'); cardEl.classList.add('swipe-left');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-left'); endSwipe(); suppressUntilClick = Date.now()+500; grade(false); }, 240); }, 240);
+      setTimeout(()=>{ cardEl.classList.remove('swipe-left'); endSwipe(); grade(false); }, 240);
     } else { endSwipe(); }
   }, {passive:true});
   cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
@@ -337,21 +361,74 @@ function tickPendingAndMaybePop(){
   if(!pending.length) return -1;
   for(const p of pending){ if(p.due>0) p.due--; }
   const idx = pending.findIndex(p=>p.due===0);
-  if(idx>=0){ const id = pending.splice(idx,1)[0].id; const i = deck.findIndex(c=>c.id===id); return i; }
+  if(idx>=0){
+    const id = pending.splice(idx,1)[0].id;
+    const i = deck.findIndex(c=>c.id===id);
+    return i;
+  }
   return -1;
 }
 
 // ===== Audio — delayed to prevent clipping =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
-function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
+function populateVoiceSelect(){
+  voiceSel.innerHTML='';
+  const opts=voices.length?voices:[{name:'Default',voiceURI:''}];
+  const sorted=opts.slice().sort((a,b)=>{
+    const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase();
+    const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1;
+    const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1;
+    return pa-pb || (a.name||'').localeCompare(b.name||'');
+  });
+  for(const v of sorted){
+    const o=document.createElement('option');
+    o.value=v.voiceURI||v.name||'';
+    o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default';
+    voiceSel.appendChild(o);
+  }
+  if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI }
+}
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
 function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)) }
 function cancelSpeak(){ if(speakTimer){ clearTimeout(speakTimer); speakTimer=null } try{ speechSynthesis.cancel() }catch(e){} }
-function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
-function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return; const u=new SpeechSynthesisUtterance(txt); u.rate=audioPrefs.rate||1; const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI); if(v) u.voice=v; try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){}; setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0) }
+function autoSpeakCurrent(trigger){
+  if(!('speechSynthesis' in window)) return;
+  const c=deck[cursor]; if(!c) return;
+  const text= showingBack? c.back : c.front;
+  const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront;
+  if(!want||!text){ cancelSpeak(); return }
+  const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS;
+  cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay);
+}
+function speak(txt){
+  try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
+  const u=new SpeechSynthesisUtterance(txt);
+  u.rate=audioPrefs.rate||1;
+  const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI);
+  if(v) u.voice=v;
+  try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){};
+  setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0);
+}
 
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
-function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
+function parseCSV(str){
+  const rows=[]; let row=[], cur='', i=0, inQ=false;
+  while(i<str.length){
+    const ch=str[i];
+    if(inQ){
+      if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue }
+      cur+=ch; i++; continue
+    } else {
+      if(ch==='"'){ inQ=true; i++; continue }
+      if(ch===','){ row.push(cur); cur=''; i++; continue }
+      if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue }
+      if(ch==='\r'){ i++; continue }
+      cur+=ch; i++;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') );
+}
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 </script>
 </body>
