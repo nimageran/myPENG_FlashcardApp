@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Nima Flashcards — NPPE (Auto CSV)</title>
+  <meta name="theme-color" content="#0f172a" />
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--ink:#e5e7eb;--muted:#94a3b8;--accent:#22c55e;--danger:#ef4444}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
+    .wrap{max-width:780px;margin:0 auto;padding:env(safe-area-inset-top) 16px 32px}
+    header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(15,23,42,.95),rgba(15,23,42,0));backdrop-filter:blur(8px);z-index:10;padding:10px 0 12px}
+    h1{font-size:18px;margin:0;opacity:.95}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:14px;border:1px solid #334155;background:#0b1220;color:var(--ink);cursor:pointer}
+    .btn.primary{background:var(--accent);color:#062e18;border-color:#16a34a;font-weight:600}
+    .btn.ghost{background:transparent}
+    .btn.warn{border-color:#7f1d1d;color:#fecaca}
+    .pill{padding:6px 10px;border-radius:999px;border:1px dashed #334155;color:var(--muted);font-size:12px}
+    .select,.chk{padding:8px 12px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:var(--ink)}
+    main.card{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px}
+    .big{font-size:22px;line-height:1.35;text-align:center;min-height:150px;padding:18px;user-select:none}
+    .img{max-width:100%;max-height:40vh;display:block;margin:8px auto;border-radius:12px;border:1px solid #334155}
+    .muted{color:var(--muted);font-size:13px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .stats .pill{border-style:solid}
+    .grid{display:grid;gap:12px}
+    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .hide{display:none!important}
+    .foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 6px}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;background:#0b1220;border:1px solid #334155;border-radius:8px;padding:2px 6px;font-size:12px;color:#cbd5e1}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row" style="justify-content:space-between">
+    <h1>Flashcards — NPPE (Nima)</h1>
+    <div class="row">
+      <span id="status" class="pill">Loading deck…</span>
+      <button id="start" class="btn primary hide">Start</button>
+      <button id="resetProgress" class="btn ghost" title="Clear known/unknown marks">Reset Progress</button>
+    </div>
+  </header>
+
+  <div class="row" style="justify-content:space-between;margin:6px 0 12px">
+    <div class="stats">
+      <span class="pill">Total: <b id="statTotal">0</b></span>
+      <span class="pill">Known: <b id="statKnown">0</b></span>
+      <span class="pill">Unknown: <b id="statUnknown">0</b></span>
+      <span class="pill">Seen: <b id="statSeen">0</b></span>
+    </div>
+    <div class="row">
+      <label class="row"><span class="pill">Mode</span>
+        <select id="mode" class="select">
+          <option value="ordered">Ordered</option>
+          <option value="random" selected>Random</option>
+        </select>
+      </label>
+      <label class="row"><span class="pill">Skip Known</span>
+        <input id="skipKnown" type="checkbox" class="chk" checked />
+      </label>
+    </div>
+  </div>
+
+  <main class="card grid">
+    <div class="row" style="justify-content:space-between">
+      <div class="muted">Tap the card (or press <span class="kbd">Space</span>) to flip</div>
+      <div class="pill">Index: <b id="indexLabel">–</b></div>
+    </div>
+    <div id="face" class="big">Place your CSV at <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>. This app loads it automatically for your NPPE study.</div>
+    <img id="img" class="img hide" alt="" />
+    <div class="actions">
+      <button id="again" class="btn">I don't know</button>
+      <button id="flip" class="btn">Flip</button>
+      <button id="good" class="btn primary">I know</button>
+      <button id="next" class="btn">Next</button>
+    </div>
+  </main>
+
+  <div class="foot">Pro tip: use <span class="kbd">Space</span> to flip, <span class="kbd">→</span> Next, <span class="kbd">1</span> Unknown, <span class="kbd">2</span> Known.</div>
+</div>
+
+<script>
+// ====== Nima NPPE Flashcards (Auto CSV) ======
+// Features:
+// - Auto-loads assets/cards.csv on page load (front,back[,img])
+// - Random or Ordered mode
+// - Mark Known / Unknown; skip Known if you want
+// - Progress saved locally (per device)
+// - Tiny keyboard shortcuts for laptop sessions
+
+const CSV_URL = 'assets/cards.csv';
+const STORAGE_KEY = 'nppe_cards_progress_v1';
+
+let deck = [];          // [{front, back, img, known:false, seen:0}]
+let cursor = -1;        // current index in ordered mode
+let showingBack = false;
+
+const $ = s => document.querySelector(s);
+const face = $('#face');
+const img  = $('#img');
+const status = $('#status');
+const startBtn = $('#start');
+const modeSel = $('#mode');
+const skipKnownChk = $('#skipKnown');
+const idxLabel = $('#indexLabel');
+const statTotal = $('#statTotal');
+const statKnown = $('#statKnown');
+const statUnknown = $('#statUnknown');
+const statSeen = $('#statSeen');
+
+(async function init(){
+  try {
+    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
+    const rows = parseCSV(text);
+    if(!rows.length) throw new Error('CSV empty');
+    const header = rows[0];
+    const hasHeader = header && header[0] && header[1] && header[0].toLowerCase()==='front' && header[1].toLowerCase()==='back';
+    const data = (hasHeader ? rows.slice(1) : rows).filter(r => (r[0]||'').trim() && (r[1]||'').trim());
+    deck = data.map((r,i)=> ({
+      id:i,
+      front:(r[0]||'').trim(),
+      back:(r[1]||'').trim(),
+      img:(r[2]||'').trim(),
+      known:false,
+      seen:0
+    }));
+    // restore progress
+    loadProgress();
+    status.textContent = 'Deck loaded';
+    startBtn.classList.remove('hide');
+    updateStats();
+    face.innerHTML = 'Ready to go. Click <b>Start</b> or press <span class="kbd">→</span>.';
+  } catch (e) {
+    status.textContent = 'No CSV found';
+    face.innerHTML = 'Create <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>.';
+  }
+})();
+
+startBtn.addEventListener('click', ()=> start());
+$('#next').addEventListener('click', next);
+$('#flip').addEventListener('click', flip);
+$('#good').addEventListener('click', ()=> grade(true));
+$('#again').addEventListener('click', ()=> grade(false));
+$('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key===' '){ e.preventDefault(); flip(); }
+  if(e.key==='ArrowRight'){ next(); }
+  if(e.key==='1'){ grade(false); }
+  if(e.key==='2'){ grade(true); }
+});
+
+function start(){
+  cursor = -1;
+  showingBack = false;
+  next();
+}
+
+function eligibleIndices(){
+  const skipKnown = skipKnownChk.checked;
+  const mode = modeSel.value;
+  let indices = deck.map((_,i)=>i);
+  if(skipKnown) indices = indices.filter(i => !deck[i].known);
+  if(mode==='ordered'){
+    // in ordered, return all remaining from cursor+1..end (or wrap if none)
+    const start = Math.max(cursor+1,0);
+    const tail = indices.filter(i=> i>=start);
+    const head = indices.filter(i=> i<start);
+    return tail.length ? tail : head; // wrap-around
+  } else {
+    return indices;
+  }
+}
+
+function next(){
+  if(!deck.length) return;
+  const mode = modeSel.value;
+  const choices = eligibleIndices();
+  if(!choices.length){
+    face.innerHTML = 'All done for now 🎉 Reset or uncheck <b>Skip Known</b> to review again.';
+    img.classList.add('hide');
+    idxLabel.textContent = '–';
+    return;
+  }
+  if(mode==='random'){
+    const i = choices[Math.floor(Math.random()*choices.length)];
+    cursor = i;
+  } else {
+    // ordered: pick first eligible after cursor (eligibleIndices already did this)
+    cursor = choices[0];
+  }
+  deck[cursor].seen++;
+  saveProgress();
+  showingBack = false;
+  renderFace();
+}
+
+function flip(){
+  if(cursor<0) return;
+  showingBack = !showingBack;
+  renderFace();
+}
+
+function grade(known){
+  if(cursor<0) return;
+  deck[cursor].known = known;
+  saveProgress();
+  updateStats();
+  next();
+}
+
+function renderFace(){
+  if(cursor<0){ face.textContent = 'Press Start'; return; }
+  const c = deck[cursor];
+  idxLabel.textContent = `${cursor+1}/${deck.length}`;
+  face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
+  if(c.img){ img.src = c.img; img.classList.remove('hide'); } else { img.classList.add('hide'); }
+  updateStats();
+}
+
+function updateStats(){
+  const total = deck.length;
+  const known = deck.filter(c=>c.known).length;
+  const seen = deck.reduce((a,c)=> a + (c.seen>0?1:0), 0);
+  statTotal.textContent = total;
+  statKnown.textContent = known;
+  statUnknown.textContent = Math.max(0,total-known);
+  statSeen.textContent = seen;
+}
+
+function saveProgress(){
+  const payload = deck.map(c=>({id:c.id,known:c.known,seen:c.seen}));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const arr = JSON.parse(raw);
+    const map = new Map(arr.map(x=>[x.id,x]));
+    deck.forEach(c=>{ const m = map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0; } });
+  }catch(e){}
+}
+
+// ===== CSV Parser (RFC4180-ish, handles quotes/commas/newlines) =====
+function parseCSV(str){
+  const rows=[]; let row=[]; let cur=''; let i=0, inQ=false;
+  while(i<str.length){
+    const ch=str[i];
+    if(inQ){
+      if(ch==='"'){
+        if(str[i+1]==='"'){ cur+='"'; i+=2; continue; }
+        inQ=false; i++; continue;
+      } else { cur+=ch; i++; continue; }
+    } else {
+      if(ch==='"'){ inQ=true; i++; continue; }
+      if(ch===','){ row.push(cur); cur=''; i++; continue; }
+      if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue; }
+      if(ch==='\r'){ i++; continue; }
+      cur+=ch; i++;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!==''));
+}
+
+function escape(s){ return (s||'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+</script>
+</body>
+</html>
