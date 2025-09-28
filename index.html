@@ -22,17 +22,20 @@
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
+    /* Bottom-in-card mark bar (green/red) */
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
     .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
     .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
 
+    /* Floating action bar: Flip/Next only */
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
 
     .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
+    /* Bottom sheet controls */
     .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
@@ -74,6 +77,7 @@
     <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
 
+    <!-- At card bottom -->
     <div class="markbar">
       <button id="again" class="btn bad">I don’t know</button>
       <button id="good" class="btn ok">I know</button>
@@ -81,11 +85,13 @@
   </main>
 </div>
 
+<!-- Floating action bar: only Flip/Next for speed -->
 <div class="fabbar">
   <button id="flip" class="btn">Flip</button>
   <button id="next" class="btn">Next</button>
 </div>
 
+<!-- Bottom sheet with controls -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
   <div class="content">
@@ -120,7 +126,7 @@
         <label class="label">Re‑show “I don’t know” after</label>
         <select id="requeueSel" class="select">
           <option value="5">5 cards</option>
-          <option value="10" selected>10 cards</option>
+          <option value="10">10 cards</option>
           <option value="20">20 cards</option>
           <option value="50">50 cards</option>
         </select>
@@ -143,7 +149,8 @@
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
+// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue =====
+// Kept: image-on-back, ID=card<number>, audio delay, bottom-sheet controls
 
 const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
@@ -168,11 +175,10 @@ sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
 function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
 (async function init(){
+  // Load audio prefs
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
-
-  await loadVoices(); populateVoiceSelect();
-
+  // Requeue select init + persistence
   if(requeueSel){
     requeueSel.value = String(requeueDistance);
     requeueSel.addEventListener('change', ()=>{
@@ -181,22 +187,37 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
     });
   }
 
+  // Tap-to-flip on card (ignore taps on controls)
+  ['main.card', '#face', '#img'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) el.addEventListener('click', (e) => {
+      if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
+      flip();
+    });
+  });
+
+  // Load voices and populate
+  await loadVoices();
+  populateVoiceSelect();
+
   // Load CSV deck
   try{
-    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
+    const text = await (await fetch(CSV_URL,{cache:'no-store'})).text();
     const rows = parseCSV(text); if(!rows.length) throw new Error('CSV empty');
-    const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
+    const header = rows[0].map?.(x=>String(x||'').toLowerCase().trim());
     const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
-    const data = (hasHeader? rows.slice(1) : rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
+    const data = (hasHeader? rows.slice(1):rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
     deck = data.map((r,i)=> ({ id: normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
+    // ensure unique ids if duplicates in CSV
     const seen = new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
 
-    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide');
-    face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. Re‑show setting is under ⋯';
+    loadProgress();
+    status.textContent='Ready'; startBtn.classList.remove('hide');
+    face.innerHTML='Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. ⋯ opens options.';
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// Buttons & shortcuts
+// Button actions
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -204,29 +225,21 @@ $('#good').addEventListener('click', ()=> grade(true));
 $('#again').addEventListener('click', ()=> grade(false));
 $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
 
+// Keyboard shortcuts (desktop)
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
-
-// Tap-to-flip on the whole card (iPhone-friendly). Ignore taps on controls.
-['main.card', '#face', '#img'].forEach(sel => {
-  const el = document.querySelector(sel);
-  if (el) el.addEventListener('click', (e) => {
-    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-    flip();
-  });
-});
 
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
   if(!deck.length) return;
-  // 1) If any queued unknown is due, show it now (takes priority over mode/random)
+  // 1) Due queued card takes priority
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
     deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
     return;
   }
-  // 2) Otherwise, pick per mode/skipKnown
+  // 2) Otherwise choose normally
   const choices = eligibleIndices();
   if(!choices.length){
     face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
@@ -240,6 +253,7 @@ function next(){
 function flip(){
   if(cursor<0) return;
   if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
+  // Animated flip: rotate to 90°, swap, rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
     showingBack = !showingBack; renderFace('flip');
@@ -254,10 +268,10 @@ function grade(known){
   const id = deck[cursor].id;
   if(known){
     deck[cursor].known = true;
-    pending = pending.filter(p=>p.id!==id); // if queued, drop it
+    pending = pending.filter(p=>p.id!==id); // remove from queue if present
   } else {
     deck[cursor].known = false;
-    queueCard(id); // schedule to come back after N cards
+    queueCard(id); // schedule to come back
   }
   saveProgress(); updateStats(); next();
 }
