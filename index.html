@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — Clean UI + Animations</title>
+  <title>Nima Flashcards — Clean UI + Markers at Bottom</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
     :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
@@ -16,9 +16,9 @@
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:#fff}
 
-    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
-    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
-    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border); cursor:pointer;}
+    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px)}
+    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none;cursor:pointer;}
+    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border);cursor:pointer;}
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
@@ -45,17 +45,14 @@
     .label{display:block;font-size:12px;color:#475569;margin-bottom:6px}
     .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);min-height:44px}
 
-    /* Flip + Swipe animations */
-    .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
-    .flip-phase{ transform: rotateY(90deg); }
-    .flip-reset{ transform: rotateY(0deg); }
-    .swiping{ transition: none!important; }
-    .swipe-right{ transition: transform .26s ease, opacity .26s ease; transform: translateX(120%) rotate(5deg); opacity:.0 }
-    .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:.0 }
-
     .hide{display:none!important}
     .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:#0f172a}
-  </style>
+    /* Flip animation helpers */
+  main.card{ will-change: transform; }
+  .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
+  .flip-phase{ transform: rotateY(90deg); }
+  .flip-reset{ transform: rotateY(0deg); }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -68,16 +65,16 @@
     </div>
   </header>
 
-  <main class="card grid" id="card">
+  <main class="card grid">
     <div class="row" style="justify-content:space-between;align-items:center">
-      <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip. Swipe ➡️ = know, ⬅️ = don’t know.</div>
+      <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip</div>
       <span class="pill">ID: <b id="indexLabel">–</b></span>
     </div>
 
     <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
 
-    <!-- At card bottom -->
+    <!-- Moved here: always-visible Know / Don’t Know at the BOTTOM of the card box -->
     <div class="markbar">
       <button id="again" class="btn bad">I don’t know</button>
       <button id="good" class="btn ok">I know</button>
@@ -140,11 +137,11 @@
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade =====
+// ===== Clean UI + markers at card bottom =====
 // Kept: image-on-back, ID=card<number>, audio delay, bottom-sheet controls
 
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_clean_v4';
+const STORAGE_KEY = 'nppe_cards_progress_clean_v3';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 
@@ -173,7 +170,7 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
     const data=(hasHeader? rows.slice(1):rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
     deck=data.map((r,i)=>({ id:normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
     const seen=new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
-    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide'); face.innerHTML='Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. ⋯ opens options.';
+    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide'); face.innerHTML='Tap <b>Start</b>. Mark at the bottom. ⋯ opens options.';
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
@@ -186,32 +183,22 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
-['#face', '#img', 'main.card'].forEach(sel => {
-  const el = document.querySelector(sel);
-  if (el) el.addEventListener('click', (e) => {
-    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-    flip();
-  });
-});
-
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){ if(!deck.length) return; const choices=eligibleIndices(); if(!choices.length){ face.innerHTML='All done 🎉 Uncheck <b>Skip Known</b> to review again.'; hideImage(); idxLabel.textContent='–'; cancelSpeak(); return } cursor=(modeSel.value==='random')? choices[Math.floor(Math.random()*choices.length)] : choices[0]; deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next') }
-
 function flip(){
   if(cursor<0) return;
   if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
-  // Animated flip: rotate to 90°, swap content, rotate back
+  // Animate: rotate to 90°, swap content, rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
-    showingBack = !showingBack; renderFace('flip');
+    showingBack = !showingBack; // <-- swap side here
+    renderFace('flip');
     cardEl.classList.remove('flip-phase');
     cardEl.classList.add('flip-reset');
     setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); }, 240);
   }, 160);
 }
-
 function grade(known){ if(cursor<0) return; deck[cursor].known=known; saveProgress(); updateStats(); next() }
 
 function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML= showingBack? escape(c.back):escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
@@ -223,41 +210,6 @@ function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.kn
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
 function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
 
-// Swipe-to-grade (left = don't know, right = know) for touch
-(function(){
-  if(!cardEl) return;
-  let startX=0, startY=0, dx=0, active=false;
-  const THRESH=90;
-  cardEl.addEventListener('touchstart', (e)=>{
-    if(e.touches.length!==1) return;
-    if(document.querySelector('#sheet.open')) return; // ignore when sheet open
-    startX = e.touches[0].clientX; startY = e.touches[0].clientY; dx=0; active=true;
-    cardEl.classList.add('swiping');
-  }, {passive:true});
-  cardEl.addEventListener('touchmove', (e)=>{
-    if(!active) return;
-    const x = e.touches[0].clientX, y = e.touches[0].clientY;
-    dx = x - startX; const dy = y - startY;
-    if(Math.abs(dy) > Math.abs(dx) + 20){ // vertical intent → cancel swiping visuals
-      active=false; cardEl.classList.remove('swiping'); cardEl.style.transform=''; return;
-    }
-    cardEl.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
-  }, {passive:true});
-  function endSwipe(){ cardEl.classList.remove('swiping'); cardEl.style.transform=''; }
-  cardEl.addEventListener('touchend', ()=>{
-    if(!active) return; active=false;
-    if(dx > THRESH){
-      cardEl.classList.remove('swipe-left'); cardEl.classList.add('swipe-right');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-right'); endSwipe(); grade(true); }, 240);
-    } else if(dx < -THRESH){
-      cardEl.classList.remove('swipe-right'); cardEl.classList.add('swipe-left');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-left'); endSwipe(); grade(false); }, 240);
-    } else { endSwipe(); }
-  }, {passive:true});
-  cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
-})();
-
-// ===== Audio — delayed to prevent clipping =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
 function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
@@ -269,6 +221,15 @@ function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
 function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
+// Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
+['#face', '#img', 'main.card'].forEach(sel => {
+  const el = document.querySelector(sel);
+  if (el) el.addEventListener('click', (e) => {
+    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
+    flip();
+  });
+});
+
 </script>
 </body>
 </html>
