@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — Clean UI + Visible Markers</title>
+  <title>Nima Flashcards — Clean UI + Markers at Bottom</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
     :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
@@ -22,17 +22,17 @@
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
-    /* Floating action bar: keep Flip/Next only; add persistent Know/Don’t Know above card */
-    .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+    /* Bottom-in-card mark bar (green/red) */
+    .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
-    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
-    .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
-
-    /* Always-visible Known / Unknown bar (green/red) */
-    .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin:4px 0 6px}
     .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
     .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
 
+    /* Floating action bar: Flip/Next only */
+    .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
+    .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
     /* Bottom sheet controls */
@@ -60,20 +60,20 @@
     </div>
   </header>
 
-  <!-- Always-visible green/red mark bar -->
-  <div class="markbar">
-    <button id="again" class="btn bad">I don’t know</button>
-    <button id="good" class="btn ok">I know</button>
-  </div>
-
   <main class="card grid">
     <div class="row" style="justify-content:space-between;align-items:center">
       <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip</div>
       <span class="pill">ID: <b id="indexLabel">–</b></span>
     </div>
 
-    <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. Controls are under <b>⋯</b>. Green/Red mark buttons stay here.</div>
+    <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
+
+    <!-- Moved here: always-visible Know / Don’t Know at the BOTTOM of the card box -->
+    <div class="markbar">
+      <button id="again" class="btn bad">I don’t know</button>
+      <button id="good" class="btn ok">I know</button>
+    </div>
   </main>
 </div>
 
@@ -132,11 +132,11 @@
 </div>
 
 <script>
-// ===== Clean UI + visible green/red mark buttons =====
+// ===== Clean UI + markers at card bottom =====
 // Kept: image-on-back, ID=card<number>, audio delay, bottom-sheet controls
 
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_clean_v2';
+const STORAGE_KEY = 'nppe_cards_progress_clean_v3';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 
@@ -164,7 +164,7 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
     const data=(hasHeader? rows.slice(1):rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
     deck=data.map((r,i)=>({ id:normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
     const seen=new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
-    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide'); face.innerHTML='Tap <b>Start</b>. Use green/red to mark fast. ⋯ opens options.';
+    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide'); face.innerHTML='Tap <b>Start</b>. Mark at the bottom. ⋯ opens options.';
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
