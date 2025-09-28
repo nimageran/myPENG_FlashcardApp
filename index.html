@@ -169,6 +169,7 @@ const modeSel=$('#mode'), skipKnownChk=$('#skipKnown'), idxLabel=$('#indexLabel'
 const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#statUnknown'), statSeen=$('#statSeen');
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
+let suppressUntilClick = 0; // prevent double-flip (e.g., tap fires twice or after swipe)
 
 openBtn.addEventListener('click', ()=> toggleSheet(true));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
@@ -187,14 +188,21 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
     });
   }
 
-  // Tap-to-flip on card (ignore taps on controls)
-  ['main.card', '#face', '#img'].forEach(sel => {
-    const el = document.querySelector(sel);
-    if (el) el.addEventListener('click', (e) => {
-      if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-      flip();
-    });
+  // Tap-to-flip on the card only (avoid double triggers and clicks from buttons/sheet)
+if (cardEl) {
+  cardEl.addEventListener('click', (e) => {
+    if (
+      e.target.closest('.markbar') ||
+      e.target.closest('.fabbar') ||
+      e.target.closest('#openControls') ||
+      e.target.closest('#sheet') ||
+      e.target.closest('button')
+    ) return;
+    if (Date.now() < suppressUntilClick) return; // debounce / post-swipe guard
+    suppressUntilClick = Date.now() + 250;
+    flip();
   });
+}
 
   // Load voices and populate
   await loadVoices();
@@ -310,10 +318,10 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
     if(!active) return; active=false;
     if(dx > THRESH){
       cardEl.classList.remove('swipe-left'); cardEl.classList.add('swipe-right');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-right'); endSwipe(); grade(true); }, 240);
+      setTimeout(()=>{ cardEl.classList.remove('swipe-right'); endSwipe(); suppressUntilClick = Date.now()+500; grade(true); }, 240);
     } else if(dx < -THRESH){
       cardEl.classList.remove('swipe-right'); cardEl.classList.add('swipe-left');
-      setTimeout(()=>{ cardEl.classList.remove('swipe-left'); endSwipe(); grade(false); }, 240);
+      setTimeout(()=>{ cardEl.classList.remove('swipe-left'); endSwipe(); suppressUntilClick = Date.now()+500; grade(false); }, 240); }, 240);
     } else { endSwipe(); }
   }, {passive:true});
   cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
