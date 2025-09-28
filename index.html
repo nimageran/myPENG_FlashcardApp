@@ -177,31 +177,12 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
 (async function init(){
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
-  if(requeueSel){ requeueSel.value = String(requeueDistance); }
-  await loadVoices(); populateVoiceSelect();
-  try{
-    const text=await (await fetch(CSV_URL,{cache:'no-store'})).text();
-    const rows=parseCSV(text); if(!rows.length) throw new Error('CSV empty');
-    const header=rows[0].map?.(x=>String(x||'').toLowerCase().trim());
-    const hasHeader=header && header[0]==='id' && header[1]==='front' && header[2]==='back';
-    const data=(hasHeader? rows.slice(1):rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
-    deck=data.map((r,i)=>({ id:normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
-    const seen=new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
-    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide'); face.innerHTML='Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. ⋯ opens options.';
-  }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
-})();
-
-startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
-$('#next').addEventListener('click', ()=> next());
-$('#flip').addEventListener('click', ()=> flip());
-$('#good').addEventListener('click', ()=> grade(true));
-$('#again').addEventListener('click', ()=> grade(false));
-$('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); pending=[]; updateStats(); renderFace(); }}); saveProgress(); updateStats(); renderFace(); }});
-
-document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
-
-// Requeue selector
-if(requeueSel){ requeueSel.addEventListener('change', ()=>{ requeueDistance = parseInt(requeueSel.value||'10',10); localStorage.setItem(REQUEUE_KEY, String(requeueDistance)); }); } flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
+  if(requeueSel){
+  requeueSel.addEventListener('change', ()=>{
+    requeueDistance = parseInt(requeueSel.value||'10',10);
+    localStorage.setItem(REQUEUE_KEY, String(requeueDistance));
+  });
+}
 
 // Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
 ['#face', '#img', 'main.card'].forEach(sel => {
@@ -216,21 +197,23 @@ function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
   if(!deck.length) return;
-  // 1) Check if any pending unknown card is due
+  // 1) If any queued unknown is due, show it now
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
     deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
     return;
   }
-  // 2) Otherwise pick per mode/skip
-  const choices=eligibleIndices();
+  // 2) Otherwise, pick per mode/skipKnown
+  const choices = eligibleIndices();
   if(!choices.length){
-    face.innerHTML='All done 🎉 Uncheck <b>Skip Known</b> to review again.'; hideImage(); idxLabel.textContent='–'; cancelSpeak(); return;
+    face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
+    hideImage(); idxLabel.textContent='–'; cancelSpeak();
+    return;
   }
-  cursor=(modeSel.value==='random')? choices[Math.floor(Math.random()*choices.length)] : choices[0];
+  cursor = (modeSel.value==='random') ? choices[Math.floor(Math.random()*choices.length)] : choices[0];
   deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
-} cursor=(modeSel.value==='random')? choices[Math.floor(Math.random()*choices.length)] : choices[0]; deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next') }
+}
 
 function flip(){
   if(cursor<0) return;
