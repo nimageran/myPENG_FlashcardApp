@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — Clean UI</title>
+  <title>Nima Flashcards — Clean UI (Know/Don’t Know visible)</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
     :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; }
@@ -69,7 +69,7 @@
   </main>
 </div>
 
-<!-- Floating action bar -->
+<!-- Floating action bar (ALWAYS VISIBLE) -->
 <div class="fabbar">
   <button id="again" class="btn">I don't know</button>
   <button id="flip" class="btn">Flip</button>
@@ -77,7 +77,7 @@
   <button id="next" class="btn">Next</button>
 </div>
 
-<!-- Bottom sheet with controls -->
+<!-- Bottom sheet with SECONDARY controls (hidden by default) -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
   <div class="content">
@@ -126,11 +126,9 @@
 </div>
 
 <script>
-// ===== Clean UI build: focus on card, tuck options into bottom sheet =====
-// Features preserved: Random/Ordered, Skip Known, audio with delay, progress, image-on-back, ID=card<number>
-
+// Clean UI with Know/Don't Know kept visible at bottom
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_clean_v1';
+const STORAGE_KEY = 'nppe_cards_progress_clean_keep_actions_v1';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 
 const DELAY_NEXT_MS = 450;   // delay before speaking new front
@@ -162,17 +160,10 @@ const rateIn = $('#rate');
 const speakFrontChk = $('#speakFront');
 const speakBackChk = $('#speakBack');
 
-// ---- UI: bottom sheet open/close ----
 openBtn.addEventListener('click', ()=> toggleSheet(true));
-sheet.addEventListener('click', (e)=>{
-  if(e.target===sheet) toggleSheet(false); // tap outside content to close
-});
-function toggleSheet(open){
-  sheet.classList.toggle('open', !!open);
-  sheet.setAttribute('aria-hidden', open? 'false':'true');
-}
+sheet.addEventListener('click', (e)=>{ if(e.target===sheet) toggleSheet(false); });
+function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true'); }
 
-// ---- Init ----
 (async function init(){
   try{ const raw = localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)); }catch(e){}
   rateIn.value = audioPrefs.rate; speakFrontChk.checked = !!audioPrefs.speakFront; speakBackChk.checked = !!audioPrefs.speakBack;
@@ -188,13 +179,11 @@ function toggleSheet(open){
     deck = data.map((r,i)=> ({ id: normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
     const seen = new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
 
-    loadProgress();
     status.textContent = 'Ready'; startBtn.classList.remove('hide');
-    face.innerHTML = 'Tap <b>Start</b>, then <b>Flip</b>. All controls are under <b>⋯</b> if needed.';
+    face.innerHTML = 'Tap <b>Start</b>, then <b>Flip</b>. Main actions stay visible below; other controls are under <b>⋯</b>.';
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// ---- Actions ----
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -202,14 +191,7 @@ $('#good').addEventListener('click', ()=> grade(true));
 $('#again').addEventListener('click', ()=> grade(false));
 $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
 
-// Keyboard shortcuts (desktop)
 document.addEventListener('keydown', (e)=>{ if(e.key===' '){ e.preventDefault(); flip(); } if(e.key==='ArrowRight'){ next(); } if(e.key==='1'){ grade(false); } if(e.key==='2'){ grade(true); } });
-
-// Audio controls persistence
-voiceSel.addEventListener('change', ()=>{ audioPrefs.voiceURI = voiceSel.value; saveAudioPrefs(); });
-rateIn.addEventListener('input', ()=>{ audioPrefs.rate = parseFloat(rateIn.value)||1; saveAudioPrefs(); });
-speakFrontChk.addEventListener('change', ()=>{ audioPrefs.speakFront = speakFrontChk.checked; saveAudioPrefs(); });
-speakBackChk.addEventListener('change', ()=>{ audioPrefs.speakBack = speakBackChk.checked; saveAudioPrefs(); });
 
 function start(){ cursor=-1; showingBack=false; next(); }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const start=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=start); const head=idx.filter(i=>i<start); return tail.length?tail:head } return idx }
@@ -219,27 +201,23 @@ function grade(known){ if(cursor<0) return; deck[cursor].known=known; saveProgre
 
 function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML = showingBack ? escape(c.back) : escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
 
-// Images on BACK
 function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt='' }
 function showImageForId(id){ const exts=['png','jpg','jpeg','webp','svg']; let i=0; const tryNext=()=>{ if(i>=exts.length){ hideImage(); return } const src=`assets/images/${id}.${exts[i++]}`; img.onerror=tryNext; img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') }; img.src=src }; tryNext() }
 
-// Stats & storage
 function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.known).length; const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0); statTotal.textContent=total; statKnown.textContent=known; statUnknown.textContent=Math.max(0,total-known); statSeen.textContent=seen }
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
 function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
 
-// Audio — delayed to prevent clipping
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
 function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
 function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)) }
 function cancelSpeak(){ if(speakTimer){ clearTimeout(speakTimer); speakTimer=null } try{ speechSynthesis.cancel() }catch(e){} }
-function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay = (trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
+function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay = (trigger==='flip')? 1000 : 450; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
 function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return; const u=new SpeechSynthesisUtterance(txt); u.rate=audioPrefs.rate||1; const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI); if(v) u.voice=v; try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){}; setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0) }
 
-// Helpers
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
-function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='')) }
+function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') } 
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 </script>
 </body>
