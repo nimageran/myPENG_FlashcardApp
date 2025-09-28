@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — NPPE (Light + Auto Audio)</title>
+  <title>Nima Flashcards — NPPE (Light + Audio, Image on Back)</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
     :root{
@@ -94,7 +94,7 @@
       </div>
     </div>
 
-    <div id="face" class="big">Place your CSV at <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>. This app auto-loads it, reads cards aloud, and scales nicely on iPhone & laptop.</div>
+    <div id="face" class="big">Place your CSV at <code>assets/cards.csv</code> with columns: <b>id,front,back</b>. Images are auto‑matched by ID: <code>assets/images/&lt;id&gt;.png</code> (or .jpg/.jpeg/.webp/.svg). Images show <b>only on the back</b>.</div>
     <img id="img" class="img hide" alt="" />
 
     <div class="actions">
@@ -110,15 +110,17 @@
 
 <script>
 // ===== Nima NPPE Flashcards (Light + Auto Audio) =====
-// Auto-loads assets/cards.csv (front,back[,img])
+// Auto-loads assets/cards.csv (id,front,back)
 // Random/Ordered, Known/Unknown, local progress
 // Auto text-to-speech on flip / next (after first user gesture)
+// Image mapping by ID: assets/images/<id>.(png|jpg|jpeg|webp|svg)
+// Images appear ONLY on the BACK side
 
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_v2';
+const STORAGE_KEY = 'nppe_cards_progress_v3';
 const AUDIO_KEY = 'nppe_audio_prefs_v1';
 
-let deck = [];          // [{front,back,img,known:false,seen:0}]
+let deck = [];          // [{id,front,back,known:false,seen:0}]
 let cursor = -1;        // current index
 let showingBack = false;
 let voices = [];
@@ -158,10 +160,11 @@ const speakBackChk = $('#speakBack');
     const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
     const rows = parseCSV(text);
     if(!rows.length) throw new Error('CSV empty');
-    const header = rows[0];
-    const hasHeader = header && header[0] && header[1] && header[0].toLowerCase()==='front' && header[1].toLowerCase()==='back';
-    const data = (hasHeader ? rows.slice(1) : rows).filter(r => (r[0]||'').trim() && (r[1]||'').trim());
-    deck = data.map((r,i)=> ({ id:i, front:(r[0]||'').trim(), back:(r[1]||'').trim(), img:(r[2]||'').trim(), known:false, seen:0 }));
+    // header detection (id,front,back) case-insensitive
+    const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
+    const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
+    const data = (hasHeader ? rows.slice(1) : rows).filter(r => (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
+    deck = data.map((r,i)=> ({ id:(r[0]||`row${i}`).trim(), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
     loadProgress();
     status.textContent = 'Deck loaded';
     startBtn.classList.remove('hide');
@@ -169,7 +172,7 @@ const speakBackChk = $('#speakBack');
     face.innerHTML = 'Ready. Click <b>Start</b> (enables speech on iPhone) or press <span class="kbd">→</span>.';
   } catch (e) {
     status.textContent = 'No CSV found';
-    face.innerHTML = 'Create <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>.';
+    face.innerHTML = 'Create <code>assets/cards.csv</code> with columns: <b>id,front,back</b>.';
   }
 })();
 
@@ -215,7 +218,7 @@ function next(){
   const choices = eligibleIndices();
   if(!choices.length){
     face.innerHTML = 'All done 🎉 Reset or uncheck <b>Skip Known</b> to review again.';
-    img.classList.add('hide');
+    hideImage();
     idxLabel.textContent = '–';
     return;
   }
@@ -232,9 +235,24 @@ function renderFace(spokeOnFront){
   const c = deck[cursor];
   idxLabel.textContent = `${cursor+1}/${deck.length}`;
   face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
-  if(c.img){ img.src = c.img; img.classList.remove('hide'); } else { img.classList.add('hide'); }
+  if(showingBack){ showImageForId(c.id); } else { hideImage(); }
   updateStats();
   autoSpeakCurrent(spokeOnFront);
+}
+
+// ===== Image loading (by ID) =====
+function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt=''; }
+function showImageForId(id){
+  const exts = ['png','jpg','jpeg','webp','svg'];
+  let i = 0;
+  const tryNext = () => {
+    if(i>=exts.length){ hideImage(); return; }
+    const src = `assets/images/${id}.${exts[i++]}`;
+    img.onerror = tryNext;
+    img.onload = () => { img.onerror = null; img.alt = id; img.classList.remove('hide'); };
+    img.src = src;
+  };
+  tryNext();
 }
 
 function updateStats(){
@@ -304,7 +322,6 @@ function autoSpeakCurrent(spokeOnFront){
   const shouldSpeak = showingBack ? audioPrefs.speakBack : audioPrefs.speakFront;
   if(!shouldSpeak) return;
   const txt = showingBack ? c.back : c.front;
-  // If this was a fresh next() call, spokeOnFront==true; on flip we pass false
   speak(txt);
 }
 
