@@ -52,6 +52,10 @@
   .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
   .flip-phase{ transform: rotateY(90deg); }
   .flip-reset{ transform: rotateY(0deg); }
+  /* Swipe helpers */
+  .swiping{ transition:none!important }
+  .swipe-right{ transition: transform .26s ease, opacity .26s ease; transform: translateX(120%) rotate(5deg); opacity:0 }
+  .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:0 }
 </style>
 </head>
 <body>
@@ -144,6 +148,7 @@ const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v3';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
+let isFlipping = false; // prevent double-flips on iPhone taps
 
 let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null;
 
@@ -187,8 +192,21 @@ function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){ if(!deck.length) return; const choices=eligibleIndices(); if(!choices.length){ face.innerHTML='All done 🎉 Uncheck <b>Skip Known</b> to review again.'; hideImage(); idxLabel.textContent='–'; cancelSpeak(); return } cursor=(modeSel.value==='random')? choices[Math.floor(Math.random()*choices.length)] : choices[0]; deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next') }
 function flip(){
-  if(cursor<0) return;
-  if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
+  if(cursor < 0 || isFlipping) return;
+  if(!cardEl){ // fallback without animation
+    showingBack = !showingBack; renderFace('flip'); return;
+  }
+  isFlipping = true;
+  // Rotate toward 90°, swap content, then rotate back
+  cardEl.classList.add('flip-anim','flip-phase');
+  setTimeout(()=>{
+    showingBack = !showingBack; // actually swap side
+    renderFace('flip');
+    cardEl.classList.remove('flip-phase');
+    cardEl.classList.add('flip-reset');
+    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); isFlipping=false; }, 240);
+  }, 140);
+}
   // Animate: rotate to 90°, swap content, rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
@@ -222,7 +240,7 @@ function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.mat
 function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 // Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
-['#face', '#img'].forEach(sel => {
+['#face', '#img', 'main.card'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
     if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
@@ -230,6 +248,36 @@ function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;'
     flip();
   });
 });
+
+// Swipe-to-grade: right = know, left = don't know (mobile-friendly)
+(function(){
+  if(!cardEl) return;
+  let startX=0, startY=0, dx=0, dy=0, active=false;
+  const THRESH=90; // px to commit
+  cardEl.addEventListener('touchstart', (e)=>{
+    if(e.touches.length!==1) return;
+    if(document.querySelector('#sheet.open')) return; // ignore when sheet open
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; dx=0; dy=0; active=true; cardEl.classList.add('swiping');
+  }, {passive:true});
+  cardEl.addEventListener('touchmove', (e)=>{
+    if(!active) return;
+    const t=e.touches[0]; dx = t.clientX - startX; dy = t.clientY - startY;
+    if(Math.abs(dy) > Math.abs(dx) + 20){ // vertical intent → cancel
+      active=false; cardEl.classList.remove('swiping'); cardEl.style.transform=''; return;
+    }
+    cardEl.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
+  }, {passive:true});
+  function resetSwipe(){ cardEl.classList.remove('swiping'); cardEl.style.transform=''; }
+  cardEl.addEventListener('touchend', ()=>{
+    if(!active) return; active=false;
+    if(dx > THRESH){
+      cardEl.classList.add('swipe-right'); setTimeout(()=>{ cardEl.classList.remove('swipe-right'); resetSwipe(); grade(true); }, 240);
+    } else if(dx < -THRESH){
+      cardEl.classList.add('swipe-left'); setTimeout(()=>{ cardEl.classList.remove('swipe-left'); resetSwipe(); grade(false); }, 240);
+    } else { resetSwipe(); }
+  }, {passive:true});
+  cardEl.addEventListener('touchcancel', ()=>{ active=false; resetSwipe(); }, {passive:true});
+})();
 
 </script>
 </body>
