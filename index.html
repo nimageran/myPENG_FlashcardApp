@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — Clean UI + Animations</title>
+  <title>Nima Flashcards — Clean UI + Animations + Requeue</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
     :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
@@ -22,20 +22,17 @@
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
-    /* Bottom-in-card mark bar (green/red) */
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
     .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
     .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
 
-    /* Floating action bar: Flip/Next only */
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
 
     .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
-    /* Bottom sheet controls */
     .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
@@ -77,7 +74,6 @@
     <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
 
-    <!-- At card bottom -->
     <div class="markbar">
       <button id="again" class="btn bad">I don’t know</button>
       <button id="good" class="btn ok">I know</button>
@@ -85,13 +81,11 @@
   </main>
 </div>
 
-<!-- Floating action bar: only Flip/Next for speed -->
 <div class="fabbar">
   <button id="flip" class="btn">Flip</button>
   <button id="next" class="btn">Next</button>
 </div>
 
-<!-- Bottom sheet with controls -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
   <div class="content">
@@ -149,11 +143,10 @@
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade =====
-// Kept: image-on-back, ID=card<number>, audio delay, bottom-sheet controls
+// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
 
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_clean_v4';
+const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const REQUEUE_KEY = 'nppe_requeue_dist_v1';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
@@ -177,15 +170,44 @@ function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAtt
 (async function init(){
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
-  if(requeueSel){
-  requeueSel.addEventListener('change', ()=>{
-    requeueDistance = parseInt(requeueSel.value||'10',10);
-    localStorage.setItem(REQUEUE_KEY, String(requeueDistance));
-  });
-}
 
-// Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
-['#face', '#img', 'main.card'].forEach(sel => {
+  await loadVoices(); populateVoiceSelect();
+
+  if(requeueSel){
+    requeueSel.value = String(requeueDistance);
+    requeueSel.addEventListener('change', ()=>{
+      requeueDistance = parseInt(requeueSel.value||'10',10);
+      localStorage.setItem(REQUEUE_KEY, String(requeueDistance));
+    });
+  }
+
+  // Load CSV deck
+  try{
+    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
+    const rows = parseCSV(text); if(!rows.length) throw new Error('CSV empty');
+    const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
+    const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
+    const data = (hasHeader? rows.slice(1) : rows).filter(r=> (r[0]||'').trim() && (r[1]||'').trim() && (r[2]||'').trim());
+    deck = data.map((r,i)=> ({ id: normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
+    const seen = new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
+
+    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide');
+    face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. Re‑show setting is under ⋯';
+  }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
+})();
+
+// Buttons & shortcuts
+startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
+$('#next').addEventListener('click', ()=> next());
+$('#flip').addEventListener('click', ()=> flip());
+$('#good').addEventListener('click', ()=> grade(true));
+$('#again').addEventListener('click', ()=> grade(false));
+$('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
+
+document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
+
+// Tap-to-flip on the whole card (iPhone-friendly). Ignore taps on controls.
+['main.card', '#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
     if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
@@ -197,7 +219,7 @@ function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
   if(!deck.length) return;
-  // 1) If any queued unknown is due, show it now
+  // 1) If any queued unknown is due, show it now (takes priority over mode/random)
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
@@ -218,7 +240,6 @@ function next(){
 function flip(){
   if(cursor<0) return;
   if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
-  // Animated flip: rotate to 90°, swap content, rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
     showingBack = !showingBack; renderFace('flip');
@@ -233,8 +254,7 @@ function grade(known){
   const id = deck[cursor].id;
   if(known){
     deck[cursor].known = true;
-    // If this card was queued, remove it
-    pending = pending.filter(p=>p.id!==id);
+    pending = pending.filter(p=>p.id!==id); // if queued, drop it
   } else {
     deck[cursor].known = false;
     queueCard(id); // schedule to come back after N cards
@@ -298,7 +318,6 @@ function tickPendingAndMaybePop(){
   if(idx>=0){ const id = pending.splice(idx,1)[0].id; const i = deck.findIndex(c=>c.id===id); return i; }
   return -1;
 }
-
 
 // ===== Audio — delayed to prevent clipping =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
