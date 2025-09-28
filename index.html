@@ -3,33 +3,49 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — NPPE (Auto CSV)</title>
-  <meta name="theme-color" content="#0f172a" />
+  <title>Nima Flashcards — NPPE (Light + Auto Audio)</title>
+  <meta name="theme-color" content="#f8fafc" />
   <style>
-    :root{--bg:#0f172a;--card:#111827;--ink:#e5e7eb;--muted:#94a3b8;--accent:#22c55e;--danger:#ef4444}
+    :root{
+      /* Light theme */
+      --bg:#ffffff;         /* page background */
+      --surface:#f8fafc;    /* card background */
+      --border:#e5e7eb;     /* light border */
+      --ink:#0f172a;        /* primary text */
+      --muted:#64748b;      /* secondary text */
+      --accent:#2563eb;     /* primary accent */
+      --accent-ink:#ffffff; /* text on accent */
+      --danger:#ef4444;
+      --radius:18px;
+    }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
-    .wrap{max-width:780px;margin:0 auto;padding:env(safe-area-inset-top) 16px 32px}
-    header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(15,23,42,.95),rgba(15,23,42,0));backdrop-filter:blur(8px);z-index:10;padding:10px 0 12px}
-    h1{font-size:18px;margin:0;opacity:.95}
+    .wrap{max-width:min(900px, 92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) 40px}
+    header{position:sticky;top:0;background:linear-gradient(to bottom, rgba(255,255,255,.95), rgba(255,255,255,0));backdrop-filter:saturate(1.2) blur(8px);z-index:10;padding:10px 0 12px}
+    h1{font-size:clamp(18px,2vw,22px);margin:0;letter-spacing:.2px}
+
+    /* Controls */
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .btn{padding:10px 14px;border-radius:14px;border:1px solid #334155;background:#0b1220;color:var(--ink);cursor:pointer}
-    .btn.primary{background:var(--accent);color:#062e18;border-color:#16a34a;font-weight:600}
+    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
     .btn.ghost{background:transparent}
-    .btn.warn{border-color:#7f1d1d;color:#fecaca}
-    .pill{padding:6px 10px;border-radius:999px;border:1px dashed #334155;color:var(--muted);font-size:12px}
-    .select,.chk{padding:8px 12px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:var(--ink)}
-    main.card{background:var(--card);border:1px solid #1f2937;border-radius:18px;padding:16px}
-    .big{font-size:22px;line-height:1.35;text-align:center;min-height:150px;padding:18px;user-select:none}
-    .img{max-width:100%;max-height:40vh;display:block;margin:8px auto;border-radius:12px;border:1px solid #334155}
+    .pill{padding:8px 12px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:13px;background:#fff}
+    .select,.chk,.range{padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);min-height:44px}
+    .range{padding:0;height:44px}
+
+    /* Card */
+    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,18px)}
+    .big{font-size:clamp(18px,3.2vw,28px);line-height:1.35;text-align:center;min-height:clamp(120px,30vh,260px);padding:clamp(12px,2.5vw,18px);user-select:none}
+    .img{max-width:100%;max-height:38vh;display:block;margin:6px auto 8px;border-radius:12px;border:1px solid var(--border)}
     .muted{color:var(--muted);font-size:13px}
-    .stats{display:flex;gap:10px;flex-wrap:wrap}
-    .stats .pill{border-style:solid}
     .grid{display:grid;gap:12px}
-    .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
     .hide{display:none!important}
     .foot{color:var(--muted);font-size:12px;text-align:center;padding:14px 6px}
-    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;background:#0b1220;border:1px solid #334155;border-radius:8px;padding:2px 6px;font-size:12px;color:#cbd5e1}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;background:#ffffff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:#0f172a}
+
+    /* iPhone-friendly touch area */
+    .btn, .select, .chk { touch-action: manipulation; }
   </style>
 </head>
 <body>
@@ -39,18 +55,19 @@
     <div class="row">
       <span id="status" class="pill">Loading deck…</span>
       <button id="start" class="btn primary hide">Start</button>
-      <button id="resetProgress" class="btn ghost" title="Clear known/unknown marks">Reset Progress</button>
+      <button id="resetProgress" class="btn ghost" title="Clear known/unknown marks">Reset</button>
     </div>
   </header>
 
+  <!-- Top controls: stats + mode + audio settings -->
   <div class="row" style="justify-content:space-between;margin:6px 0 12px">
-    <div class="stats">
+    <div class="row" style="gap:8px;flex-wrap:wrap">
       <span class="pill">Total: <b id="statTotal">0</b></span>
       <span class="pill">Known: <b id="statKnown">0</b></span>
       <span class="pill">Unknown: <b id="statUnknown">0</b></span>
       <span class="pill">Seen: <b id="statSeen">0</b></span>
     </div>
-    <div class="row">
+    <div class="row" style="gap:8px">
       <label class="row"><span class="pill">Mode</span>
         <select id="mode" class="select">
           <option value="ordered">Ordered</option>
@@ -64,12 +81,22 @@
   </div>
 
   <main class="card grid">
-    <div class="row" style="justify-content:space-between">
-      <div class="muted">Tap the card (or press <span class="kbd">Space</span>) to flip</div>
-      <div class="pill">Index: <b id="indexLabel">–</b></div>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip</div>
+      <div class="row" style="gap:8px">
+        <span class="pill">Index: <b id="indexLabel">–</b></span>
+        <span class="pill">Audio
+          <select id="voiceSel" class="select" style="min-width:160px"></select>
+        </span>
+        <span class="pill">Rate <input id="rate" class="range" type="range" min="0.6" max="1.4" value="1" step="0.1" style="width:110px"></span>
+        <label class="pill">Auto Front <input id="speakFront" type="checkbox" class="chk" checked></label>
+        <label class="pill">Auto Back <input id="speakBack" type="checkbox" class="chk" checked></label>
+      </div>
     </div>
-    <div id="face" class="big">Place your CSV at <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>. This app loads it automatically for your NPPE study.</div>
+
+    <div id="face" class="big">Place your CSV at <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>. This app auto-loads it, reads cards aloud, and scales nicely on iPhone & laptop.</div>
     <img id="img" class="img hide" alt="" />
+
     <div class="actions">
       <button id="again" class="btn">I don't know</button>
       <button id="flip" class="btn">Flip</button>
@@ -78,25 +105,27 @@
     </div>
   </main>
 
-  <div class="foot">Pro tip: use <span class="kbd">Space</span> to flip, <span class="kbd">→</span> Next, <span class="kbd">1</span> Unknown, <span class="kbd">2</span> Known.</div>
+  <div class="foot">Shortcuts: <span class="kbd">Space</span> flip · <span class="kbd">→</span> next · <span class="kbd">1</span> unknown · <span class="kbd">2</span> known</div>
 </div>
 
 <script>
-// ====== Nima NPPE Flashcards (Auto CSV) ======
-// Features:
-// - Auto-loads assets/cards.csv on page load (front,back[,img])
-// - Random or Ordered mode
-// - Mark Known / Unknown; skip Known if you want
-// - Progress saved locally (per device)
-// - Tiny keyboard shortcuts for laptop sessions
+// ===== Nima NPPE Flashcards (Light + Auto Audio) =====
+// Auto-loads assets/cards.csv (front,back[,img])
+// Random/Ordered, Known/Unknown, local progress
+// Auto text-to-speech on flip / next (after first user gesture)
 
 const CSV_URL = 'assets/cards.csv';
-const STORAGE_KEY = 'nppe_cards_progress_v1';
+const STORAGE_KEY = 'nppe_cards_progress_v2';
+const AUDIO_KEY = 'nppe_audio_prefs_v1';
 
-let deck = [];          // [{front, back, img, known:false, seen:0}]
-let cursor = -1;        // current index in ordered mode
+let deck = [];          // [{front,back,img,known:false,seen:0}]
+let cursor = -1;        // current index
 let showingBack = false;
+let voices = [];
+let voiceReady = false;
+let audioPrefs = { voiceURI: '', rate: 1, speakFront: true, speakBack: true };
 
+// Elements
 const $ = s => document.querySelector(s);
 const face = $('#face');
 const img  = $('#img');
@@ -109,8 +138,22 @@ const statTotal = $('#statTotal');
 const statKnown = $('#statKnown');
 const statUnknown = $('#statUnknown');
 const statSeen = $('#statSeen');
+const voiceSel = $('#voiceSel');
+const rateIn = $('#rate');
+const speakFrontChk = $('#speakFront');
+const speakBackChk = $('#speakBack');
 
+// --- Init ---
 (async function init(){
+  // Load audio prefs
+  try{ const raw = localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)); }catch(e){}
+  rateIn.value = audioPrefs.rate;
+  speakFrontChk.checked = !!audioPrefs.speakFront;
+  speakBackChk.checked = !!audioPrefs.speakBack;
+
+  await loadVoices();
+  populateVoiceSelect();
+
   try {
     const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
     const rows = parseCSV(text);
@@ -118,45 +161,40 @@ const statSeen = $('#statSeen');
     const header = rows[0];
     const hasHeader = header && header[0] && header[1] && header[0].toLowerCase()==='front' && header[1].toLowerCase()==='back';
     const data = (hasHeader ? rows.slice(1) : rows).filter(r => (r[0]||'').trim() && (r[1]||'').trim());
-    deck = data.map((r,i)=> ({
-      id:i,
-      front:(r[0]||'').trim(),
-      back:(r[1]||'').trim(),
-      img:(r[2]||'').trim(),
-      known:false,
-      seen:0
-    }));
-    // restore progress
+    deck = data.map((r,i)=> ({ id:i, front:(r[0]||'').trim(), back:(r[1]||'').trim(), img:(r[2]||'').trim(), known:false, seen:0 }));
     loadProgress();
     status.textContent = 'Deck loaded';
     startBtn.classList.remove('hide');
     updateStats();
-    face.innerHTML = 'Ready to go. Click <b>Start</b> or press <span class="kbd">→</span>.';
+    face.innerHTML = 'Ready. Click <b>Start</b> (enables speech on iPhone) or press <span class="kbd">→</span>.';
   } catch (e) {
     status.textContent = 'No CSV found';
     face.innerHTML = 'Create <code>assets/cards.csv</code> with columns: <b>front,back[,img]</b>.';
   }
 })();
 
-startBtn.addEventListener('click', ()=> start());
-$('#next').addEventListener('click', next);
-$('#flip').addEventListener('click', flip);
+startBtn.addEventListener('click', ()=> { start(); warmUpSpeech(); });
+$('#next').addEventListener('click', ()=> { next(); });
+$('#flip').addEventListener('click', ()=> { flip(); });
 $('#good').addEventListener('click', ()=> grade(true));
 $('#again').addEventListener('click', ()=> grade(false));
 $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unknown and Seen counts?')){ deck.forEach(c=>{c.known=false;c.seen=0}); saveProgress(); updateStats(); renderFace(); }});
 
-document.addEventListener('keydown', (e)=>{
+// Keyboard (desktop/laptop)
+addEventListener('keydown', (e)=>{
   if(e.key===' '){ e.preventDefault(); flip(); }
   if(e.key==='ArrowRight'){ next(); }
   if(e.key==='1'){ grade(false); }
   if(e.key==='2'){ grade(true); }
 });
 
-function start(){
-  cursor = -1;
-  showingBack = false;
-  next();
-}
+// Audio controls
+voiceSel.addEventListener('change', ()=>{ audioPrefs.voiceURI = voiceSel.value; saveAudioPrefs(); });
+rateIn.addEventListener('input', ()=>{ audioPrefs.rate = parseFloat(rateIn.value)||1; saveAudioPrefs(); });
+speakFrontChk.addEventListener('change', ()=>{ audioPrefs.speakFront = speakFrontChk.checked; saveAudioPrefs(); });
+speakBackChk.addEventListener('change', ()=>{ audioPrefs.speakBack = speakBackChk.checked; saveAudioPrefs(); });
+
+function start(){ cursor = -1; showingBack = false; next(); }
 
 function eligibleIndices(){
   const skipKnown = skipKnownChk.checked;
@@ -164,14 +202,11 @@ function eligibleIndices(){
   let indices = deck.map((_,i)=>i);
   if(skipKnown) indices = indices.filter(i => !deck[i].known);
   if(mode==='ordered'){
-    // in ordered, return all remaining from cursor+1..end (or wrap if none)
     const start = Math.max(cursor+1,0);
     const tail = indices.filter(i=> i>=start);
     const head = indices.filter(i=> i<start);
     return tail.length ? tail : head; // wrap-around
-  } else {
-    return indices;
-  }
+  } else return indices;
 }
 
 function next(){
@@ -179,45 +214,27 @@ function next(){
   const mode = modeSel.value;
   const choices = eligibleIndices();
   if(!choices.length){
-    face.innerHTML = 'All done for now 🎉 Reset or uncheck <b>Skip Known</b> to review again.';
+    face.innerHTML = 'All done 🎉 Reset or uncheck <b>Skip Known</b> to review again.';
     img.classList.add('hide');
     idxLabel.textContent = '–';
     return;
   }
-  if(mode==='random'){
-    const i = choices[Math.floor(Math.random()*choices.length)];
-    cursor = i;
-  } else {
-    // ordered: pick first eligible after cursor (eligibleIndices already did this)
-    cursor = choices[0];
-  }
-  deck[cursor].seen++;
-  saveProgress();
-  showingBack = false;
-  renderFace();
+  cursor = (mode==='random') ? choices[Math.floor(Math.random()*choices.length)] : choices[0];
+  deck[cursor].seen++; saveProgress(); showingBack = false; renderFace(true);
 }
 
-function flip(){
-  if(cursor<0) return;
-  showingBack = !showingBack;
-  renderFace();
-}
+function flip(){ if(cursor<0) return; showingBack = !showingBack; renderFace(false); }
 
-function grade(known){
-  if(cursor<0) return;
-  deck[cursor].known = known;
-  saveProgress();
-  updateStats();
-  next();
-}
+function grade(known){ if(cursor<0) return; deck[cursor].known = known; saveProgress(); updateStats(); next(); }
 
-function renderFace(){
+function renderFace(spokeOnFront){
   if(cursor<0){ face.textContent = 'Press Start'; return; }
   const c = deck[cursor];
   idxLabel.textContent = `${cursor+1}/${deck.length}`;
   face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
   if(c.img){ img.src = c.img; img.classList.remove('hide'); } else { img.classList.add('hide'); }
   updateStats();
+  autoSpeakCurrent(spokeOnFront);
 }
 
 function updateStats(){
@@ -230,21 +247,68 @@ function updateStats(){
   statSeen.textContent = seen;
 }
 
-function saveProgress(){
-  const payload = deck.map(c=>({id:c.id,known:c.known,seen:c.seen}));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+function saveProgress(){ const payload = deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }
+function loadProgress(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr = JSON.parse(raw); const map = new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m = map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0; } }); }catch(e){} }
+function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)); }
+
+// ===== Text-To-Speech =====
+function loadVoices(){
+  return new Promise(res=>{
+    const handler = ()=>{ voices = speechSynthesis.getVoices(); if(voices && voices.length){ voiceReady=true; speechSynthesis.removeEventListener('voiceschanged', handler); res(); } };
+    speechSynthesis.addEventListener('voiceschanged', handler);
+    // also try immediately
+    voices = speechSynthesis.getVoices(); if(voices && voices.length){ voiceReady=true; speechSynthesis.removeEventListener('voiceschanged', handler); res(); }
+    // fallback timeout
+    setTimeout(()=>{ voices = speechSynthesis.getVoices(); voiceReady=true; res(); }, 800);
+  });
 }
-function loadProgress(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const arr = JSON.parse(raw);
-    const map = new Map(arr.map(x=>[x.id,x]));
-    deck.forEach(c=>{ const m = map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0; } });
-  }catch(e){}
+function populateVoiceSelect(){
+  voiceSel.innerHTML = '';
+  const opts = voices.length ? voices : [{name:'Default', voiceURI:''}];
+  // Prefer English (Canada/US) voices at top
+  const sorted = opts.slice().sort((a,b)=>{
+    const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase();
+    const pa = (la.includes('en-ca')||la.includes('en-us'))?0:1;
+    const pb = (lb.includes('en-ca')||lb.includes('en-us'))?0:1;
+    return pa-pb || (a.name||'').localeCompare(b.name||'');
+  });
+  for(const v of sorted){
+    const o = document.createElement('option');
+    o.value = v.voiceURI || v.name || '';
+    o.textContent = v.name ? `${v.name} (${v.lang||''})` : 'Default';
+    voiceSel.appendChild(o);
+  }
+  // restore selection
+  if(audioPrefs.voiceURI){ voiceSel.value = audioPrefs.voiceURI; }
+}
+function speak(text){
+  try{ speechSynthesis.cancel(); }catch(e){}
+  if(!text || !('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = audioPrefs.rate||1;
+  // select voice by URI or name
+  const v = voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI);
+  if(v) u.voice = v;
+  // Some iOS versions need a small delay after user gesture
+  setTimeout(()=>{ try{ speechSynthesis.speak(u); }catch(e){} }, 0);
+}
+function warmUpSpeech(){
+  // Call once after a user gesture to satisfy iOS autoplay policy
+  if(!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance('');
+  try{ speechSynthesis.speak(u); speechSynthesis.cancel(); }catch(e){}
+}
+function autoSpeakCurrent(spokeOnFront){
+  const c = deck[cursor];
+  if(!c) return;
+  const shouldSpeak = showingBack ? audioPrefs.speakBack : audioPrefs.speakFront;
+  if(!shouldSpeak) return;
+  const txt = showingBack ? c.back : c.front;
+  // If this was a fresh next() call, spokeOnFront==true; on flip we pass false
+  speak(txt);
 }
 
-// ===== CSV Parser (RFC4180-ish, handles quotes/commas/newlines) =====
+// ===== CSV Parser (RFC4180-ish) =====
 function parseCSV(str){
   const rows=[]; let row=[]; let cur=''; let i=0, inQ=false;
   while(i<str.length){
@@ -265,7 +329,6 @@ function parseCSV(str){
   row.push(cur); rows.push(row);
   return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!==''));
 }
-
 function escape(s){ return (s||'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 </script>
 </body>
