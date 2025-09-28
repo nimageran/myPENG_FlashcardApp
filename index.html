@@ -150,7 +150,7 @@ const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 let isFlipping = false; // prevent double-flips on iPhone taps
 
-let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null; let isFlipping=false;
+let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null;
 
 const $=s=>document.querySelector(s);
 const face=$('#face'), img=$('#img'), status=$('#status'), startBtn=$('#start'), openBtn=$('#openControls'), sheet=$('#sheet');
@@ -197,17 +197,6 @@ function flip(){
     showingBack = !showingBack; renderFace('flip'); return;
   }
   isFlipping = true;
-  // Animated flip: rotate to 90°, swap content, rotate back
-  cardEl.classList.add('flip-anim','flip-phase');
-  setTimeout(()=>{
-    showingBack = !showingBack; // actually swap side
-    renderFace('flip');
-    cardEl.classList.remove('flip-phase');
-    cardEl.classList.add('flip-reset');
-    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); isFlipping=false; }, 240);
-  }, 140);
-}
-  isFlipping = true;
   // Rotate toward 90°, swap content, then rotate back
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
@@ -240,15 +229,13 @@ function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
 function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
-// Tap-to-flip on card content and image (iPhone-friendly). Ignore taps on controls.
-['#face', '#img'].forEach(sel => {
+// Tap-to-flip on the whole card (iPhone-friendly). Ignore taps on controls.
+['main.card', '#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
     if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-    e.stopPropagation();
     flip();
   });
-});
 });
 
 // Swipe-to-grade: right = know, left = don't know (mobile-friendly)
