@@ -6,55 +6,63 @@
   <title>Nima Flashcards — Clean UI + Animations + Requeue</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
-    /* ====== THEME SYSTEM (uses CSS variables) ====== */
+    /* ===== Base theme tokens (Light is default) ===== */
     :root{
       --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb;
       --ink:#0f172a; --muted:#64748b;
       --accent:#2563eb; --accent-ink:#ffffff;
       --radius:18px; --ok:#16a34a; --bad:#dc2626;
     }
-    :root[data-theme="light"]{
+
+    /* ===== Theme variants (set with body[data-theme="..."]) ===== */
+    body[data-theme="light"]{
       --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb;
       --ink:#0f172a; --muted:#64748b;
       --accent:#2563eb; --accent-ink:#ffffff;
       --ok:#16a34a; --bad:#dc2626;
     }
-    :root[data-theme="dark"]{
-      --bg:#0b1020; --surface:#111827; --border:#1f2937;
+    body[data-theme="dark"]{
+      --bg:#0b1220; --surface:#0f172a; --border:#1f2937;
       --ink:#e5e7eb; --muted:#94a3b8;
-      --accent:#4f46e5; --accent-ink:#e5e7eb;
-      --ok:#22c55e; --bad:#ef4444;
+      --accent:#22d3ee; --accent-ink:#0b1220;
+      --ok:#10b981; --bad:#f43f5e;
     }
-    :root[data-theme="neon-purple"]{
-      --bg:#0a0217; --surface:#140b2a; --border:#311b92;
-      --ink:#f2e7fe; --muted:#b39ddb;
-      --accent:#a855f7; --accent-ink:#f5f3ff;
-      --ok:#34d399; --bad:#fb7185;
+    body[data-theme="neon-purple"]{
+      --bg:#0b0613; --surface:#1a1030; --border:#3b1d72;
+      --ink:#eddcff; --muted:#bda7ff;
+      --accent:#a855f7; --accent-ink:#1a1030;
+      --ok:#22d3ee; --bad:#fb7185;
     }
-    :root[data-theme="neon-blue"]{
-      --bg:#00111f; --surface:#001a2e; --border:#0b3a5a;
-      --ink:#e0f2fe; --muted:#93c5fd;
-      --accent:#0ea5e9; --accent-ink:#00111f;
-      --ok:#22d3ee; --bad:#f87171;
+    body[data-theme="neon-blue"]{
+      --bg:#03121e; --surface:#072033; --border:#0e3a57;
+      --ink:#e6f3ff; --muted:#9fd0ff;
+      --accent:#38bdf8; --accent-ink:#03121e;
+      --ok:#34d399; --bad:#f87171;
     }
 
-    /* ====== Existing styles (unchanged) ====== */
+    /* ===== App styles ===== */
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
     .wrap{max-width:min(900px,92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) calc(56px + env(safe-area-inset-bottom))}
 
-    header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(255,255,255,.95),rgba(255,255,255,0));backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px}
-    /* Make header gradient adapt on dark themes */
-    @media (prefers-color-scheme: dark){
-      :root[data-theme="dark"] header,
-      :root[data-theme="neon-purple"] header,
-      :root[data-theme="neon-blue"] header{
-        background:linear-gradient(to bottom,rgba(0,0,0,.45),rgba(0,0,0,0));
-      }
-    }
+    header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(255,255,255,.0),rgba(255,255,255,.0));
+      background:linear-gradient(to bottom, color-mix(in oklab, var(--bg) 95%, transparent), transparent);
+      backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px}
     h1{font-size:clamp(18px,2vw,20px);margin:0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--surface)}
+
+    /* Small pill-select just for the header theme picker */
+    .select.pillish{
+      appearance:none; -webkit-appearance:none;
+      font-size:12px; color:var(--ink);
+      padding:6px 26px 6px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface);
+      background-image: linear-gradient(45deg, var(--muted) 50%, transparent 50%),
+                        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position: right 8px center, right 14px center;
+      background-size: 6px 6px, 6px 6px; background-repeat:no-repeat;
+      min-height:auto;
+    }
 
     main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
     .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
@@ -64,35 +72,28 @@
 
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
-    .btn.ok{background:var(--ok);color:#001; border-color:rgba(0,0,0,.08)}
-    .btn.bad{background:var(--bad);color:#fff; border-color:rgba(0,0,0,.08)}
-    :root[data-theme="dark"] .btn.ok,
-    :root[data-theme="neon-purple"] .btn.ok,
-    :root[data-theme="neon-blue"] .btn.ok{ color:#012; }
-    .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
-    :root[data-theme="dark"] .fabbar,
-    :root[data-theme="neon-purple"] .fabbar,
-    :root[data-theme="neon-blue"] .fabbar{
-      background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.35),transparent);
-    }
+    .btn.ok{background:var(--ok);color:#fff;border-color:color-mix(in srgb, var(--ok) 80%, #0000)}
+    .btn.bad{background:var(--bad);color:#fff;border-color:color-mix(in srgb, var(--bad) 80%, #0000)}
 
-    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:color-mix(in srgb, var(--accent) 70%, #000 30%);font-weight:600}
+    .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));
+      background:linear-gradient(to top, color-mix(in oklab, var(--bg) 96%, transparent), color-mix(in oklab, var(--bg) 70%, transparent), transparent);
+      border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:color-mix(in srgb, var(--accent) 75%, #0000);font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
+    /* Bottom sheet (unchanged per your request) */
     .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:var(--surface);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
-    :root[data-theme="dark"] .sheet .handle,
-    :root[data-theme="neon-purple"] .sheet .handle,
-    :root[data-theme="neon-blue"] .sheet .handle{ background:#334155 }
     .sheet .content{max-width:900px;margin:0 auto;padding:6px clamp(14px,4vw,20px) calc(14px + env(safe-area-inset-bottom))}
     .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg)}
+    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--surface)}
     .label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
     .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
 
-    /* Flip + Swipe animations */
+    /* Flip + Swipe animations (unchanged) */
     .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
     .flip-phase{ transform: rotateY(90deg); }
     .flip-reset{ transform: rotateY(0deg); }
@@ -109,6 +110,14 @@
   <header class="row" style="justify-content:space-between">
     <h1>Flashcards — NPPE (Nima)</h1>
     <div class="row">
+      <!-- NEW: Theme picker (main page, not in panel) -->
+      <select id="themeSel" class="select pillish" title="Theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="neon-purple">Neon Purple</option>
+        <option value="neon-blue">Neon Blue</option>
+      </select>
+
       <span id="status" class="pill">Loading…</span>
       <button id="openControls" class="btn icon ghost" title="Controls">⋯</button>
       <button id="start" class="btn primary hide">Start</button>
@@ -136,21 +145,11 @@
   <button id="next" class="btn">Next</button>
 </div>
 
+<!-- Your bottom sheet stays exactly as-is -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
   <div class="content">
     <div class="controls-grid">
-      <!-- NEW: Theme picker -->
-      <div class="fieldset">
-        <label class="label">Theme</label>
-        <select id="themeSel" class="select">
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="neon-purple">Neon Purple</option>
-          <option value="neon-blue">Neon Blue</option>
-        </select>
-      </div>
-
       <div class="fieldset">
         <label class="label">Mode</label>
         <select id="mode" class="select">
@@ -204,8 +203,6 @@
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
-
 const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
@@ -225,34 +222,33 @@ const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#stat
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
 const themeSel = document.querySelector('#themeSel');
+const metaTheme = document.querySelector('meta[name="theme-color"]');
 
-// Open/close panel (unchanged)
+/* ===== Theme handling (main page only) ===== */
+function applyTheme(name){
+  document.body.setAttribute('data-theme', name);
+  localStorage.setItem(THEME_KEY, name);
+  // Update browser UI color (e.g., iPhone address bar) to match background
+  try {
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+  } catch {}
+}
+
+(function initTheme(){
+  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  themeSel.value = saved;
+  applyTheme(saved);
+  themeSel.addEventListener('change', ()=> applyTheme(themeSel.value));
+})();
+
+/* ===== Bottom sheet open/close (unchanged) ===== */
 openBtn.addEventListener('click', ()=> toggleSheet(true));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
 function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
-// ===== THEME handling =====
-function applyTheme(name){
-  document.documentElement.setAttribute('data-theme', name);
-  try{
-    localStorage.setItem(THEME_KEY, name);
-    // update browser UI color (address bar) to match theme background
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if(meta){
-      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
-      meta.setAttribute('content', bg);
-    }
-  }catch(e){}
-}
-
-// ===== Init =====
+/* ===== Init deck, audio prefs ===== */
 (async function init(){
-  // Theme init (before paint)
-  const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
-  applyTheme(savedTheme);
-  if(themeSel) themeSel.value = savedTheme;
-  themeSel?.addEventListener('change', ()=> applyTheme(themeSel.value));
-
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
 
@@ -281,7 +277,7 @@ function applyTheme(name){
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// Buttons & shortcuts (unchanged)
+/* ===== Buttons & shortcuts ===== */
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -291,7 +287,7 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip (unchanged)
+/* Tap-to-flip (unchanged) */
 ['main.card', '#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
@@ -300,6 +296,7 @@ document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); f
   });
 });
 
+/* ===== Core deck logic (unchanged) ===== */
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
@@ -354,7 +351,7 @@ function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.kn
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
 function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
 
-// Swipe-to-grade (left = don't know, right = know)
+/* Swipe-to-grade (unchanged) */
 (function(){
   if(!cardEl) return;
   let startX=0, startY=0, dx=0, active=false;
@@ -388,7 +385,7 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
   cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
 })();
 
-// --- Requeue helpers ---
+/* Requeue helpers (unchanged) */
 function queueCard(id){
   const existing = pending.find(p=>p.id===id);
   if(existing){ existing.due = requeueDistance; return; }
@@ -402,7 +399,7 @@ function tickPendingAndMaybePop(){
   return -1;
 }
 
-// ===== Audio — delayed to prevent clipping =====
+/* Audio (unchanged) */
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
 function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
