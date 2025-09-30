@@ -3,41 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Nima Flashcards — Clean UI + Animations + Requeue + Themes</title>
-  <meta name="theme-color" content="#f8fafc" id="themeColorMeta" />
+  <title>Nima Flashcards – Clean UI + Animations + Requeue</title>
+  <meta name="theme-color" content="#f8fafc" />
   <style>
-    /* ===== Base (Light) is the default — other themes override via [data-theme] ===== */
-    :root{
-      --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b;
-      --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626;
-    }
-
-    /* Dark */
-    :root[data-theme="dark"]{
-      --bg:#0b1220; --surface:#0f172a; --border:#1f2937; --ink:#e5e7eb; --muted:#94a3b8;
-      --accent:#60a5fa; --accent-ink:#0b1220; --ok:#22c55e; --bad:#f87171;
-    }
-    /* Light Neon Purple */
-    :root[data-theme="neon-purple"]{
-      --bg:#ffffff; --surface:#faf5ff; --border:#ead8ff; --ink:#211835; --muted:#6b5ca8;
-      --accent:#a21caf; --accent-ink:#ffffff; --ok:#16a34a; --bad:#dc2626;
-    }
-    /* Light Neon Blue */
-    :root[data-theme="neon-blue"]{
-      --bg:#ffffff; --surface:#f0f9ff; --border:#cfefff; --ink:#0b1b2b; --muted:#4f7da0;
-      --accent:#0ea5e9; --accent-ink:#ffffff; --ok:#16a34a; --bad:#dc2626;
-    }
-
+    :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
+    [data-theme="dark"]{ --bg:#0f172a; --surface:#1e293b; --border:#334155; --ink:#f1f5f9; --muted:#94a3b8; --accent:#3b82f6; --accent-ink:#ffffff; --ok:#22c55e; --bad:#ef4444; }
+    [data-theme="neon-purple"]{ --bg:#faf5ff; --surface:#f3e8ff; --border:#e9d5ff; --ink:#581c87; --muted:#7c3aed; --accent:#a855f7; --accent-ink:#ffffff; --ok:#10b981; --bad:#f43f5e; }
+    [data-theme="neon-blue"]{ --bg:#eff6ff; --surface:#dbeafe; --border:#bfdbfe; --ink:#1e3a8a; --muted:#3b82f6; --accent:#0ea5e9; --accent-ink:#ffffff; --ok:#14b8a6; --bad:#f43f5e; }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
     .wrap{max-width:min(900px,92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) calc(56px + env(safe-area-inset-bottom))}
 
     header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(255,255,255,.95),rgba(255,255,255,0));backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px}
-    /* Dark header gradient tweak */
-    :root[data-theme="dark"] header{background:linear-gradient(to bottom,rgba(15,23,42,.95),rgba(15,23,42,0))}
     h1{font-size:clamp(18px,2vw,20px);margin:0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--surface)}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--bg)}
 
     main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
     .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
@@ -46,28 +26,27 @@
     .grid{display:grid;gap:10px}
 
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
-    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
+    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
     .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
     .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
 
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
-    :root[data-theme="dark"] .fabbar{background:linear-gradient(to top,rgba(15,23,42,.96),rgba(15,23,42,.70),transparent)}
 
-    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:color-mix(in srgb, var(--accent), #000 20%);font-weight:600}
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
-    /* Bottom sheet controls (unchanged behavior) */
-    .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:var(--surface);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
+    .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:var(--bg);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out;max-height:80vh;overflow-y:auto}
     .sheet.open{bottom:0}
-    .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
-    .sheet .content{max-width:900px;margin:0 auto;padding:6px clamp(14px,4vw,20px) calc(14px + env(safe-area-inset-bottom))}
+    .sheet .handle{width:44px;height:5px;background:var(--border);border-radius:999px;margin:12px auto}
+    .sheet-header{position:sticky;top:0;background:var(--bg);z-index:10;padding:8px clamp(14px,4vw,20px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .sheet-header h2{margin:0;font-size:18px;color:var(--ink)}
+    .btn.close{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:24px;line-height:1}
+    .sheet .content{max-width:900px;margin:0 auto;padding:16px clamp(14px,4vw,20px) calc(24px + env(safe-area-inset-bottom))}
     .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--surface)}
+    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg)}
     .label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
     .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--ink);min-height:44px}
-    /* compact select for header */
-    .select.theme{min-height:36px;padding:6px 10px;font-size:12px;border-radius:999px}
 
     /* Flip + Swipe animations */
     .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
@@ -78,38 +57,31 @@
     .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:.0 }
 
     .hide{display:none!important}
-    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:var(--ink)}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:var(--ink)}
   </style>
 </head>
 <body>
 <div class="wrap">
   <header class="row" style="justify-content:space-between">
-    <h1>Flashcards — NPPE (Nima)</h1>
+    <h1>Flashcards – NPPE (Nima)</h1>
     <div class="row">
       <span id="status" class="pill">Loading…</span>
       <button id="openControls" class="btn icon ghost" title="Controls">⋯</button>
       <button id="start" class="btn primary hide">Start</button>
-      <!-- NEW: Compact theme selector -->
-      <select id="themeSel" class="select theme" title="Theme">
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="neon-purple">Neon Purple</option>
-        <option value="neon-blue">Neon Blue</option>
-      </select>
     </div>
   </header>
 
   <main class="card grid" id="card">
     <div class="row" style="justify-content:space-between;align-items:center">
-      <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip. Swipe ➡️ = know, ⬅️ = don’t know.</div>
-      <span class="pill">ID: <b id="indexLabel">–</b></span>
+      <div class="muted">Tap card (or <span class="kbd">Space</span>) to flip. Swipe ➡️ = know, ⬅️ = don't know.</div>
+      <span class="pill">ID: <b id="indexLabel">—</b></span>
     </div>
 
     <div id="face" class="big">Place <code>assets/cards.csv</code> with <b>id,front,back</b>. Images show on back only via <code>assets/images/card&lt;number&gt;.png</code>. ⋯ opens options.</div>
     <img id="img" class="img hide" alt="" />
 
     <div class="markbar">
-      <button id="again" class="btn bad">I don’t know</button>
+      <button id="again" class="btn bad">I don't know</button>
       <button id="good" class="btn ok">I know</button>
     </div>
   </main>
@@ -120,11 +92,23 @@
   <button id="next" class="btn">Next</button>
 </div>
 
-<!-- Bottom sheet (unchanged content) -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
+  <div class="sheet-header">
+    <h2>Settings</h2>
+    <button id="closeSheet" class="btn close" aria-label="Close">×</button>
+  </div>
   <div class="content">
     <div class="controls-grid">
+      <div class="fieldset">
+        <label class="label">Theme</label>
+        <select id="themeSel" class="select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="neon-purple">Neon Purple</option>
+          <option value="neon-blue">Neon Blue</option>
+        </select>
+      </div>
       <div class="fieldset">
         <label class="label">Mode</label>
         <select id="mode" class="select">
@@ -152,7 +136,7 @@
         </div>
       </div>
       <div class="fieldset">
-        <label class="label">Re-show “I don’t know” after</label>
+        <label class="label">Re-show "I don't know" after</label>
         <select id="requeueSel" class="select">
           <option value="5">5 cards</option>
           <option value="10" selected>10 cards</option>
@@ -178,7 +162,8 @@
 </div>
 
 <script>
-// ===== Core app (unchanged) + Theme picker =====
+// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
+
 const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
@@ -189,6 +174,7 @@ const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null;
 let requeueDistance = parseInt(localStorage.getItem(REQUEUE_KEY)||'10',10);
 let pending = []; // items: {id, due}
+let isFlipping = false;
 
 const $=s=>document.querySelector(s);
 const face=$('#face'), img=$('#img'), status=$('#status'), startBtn=$('#start'), openBtn=$('#openControls'), sheet=$('#sheet');
@@ -198,32 +184,27 @@ const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#stat
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
 const themeSel = document.querySelector('#themeSel');
-const themeColorMeta = document.querySelector('#themeColorMeta');
 
 openBtn.addEventListener('click', ()=> toggleSheet(true));
+document.querySelector('#closeSheet')?.addEventListener('click', ()=> toggleSheet(false));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
 function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
-// === Theme handling ===
-function applyTheme(t){
-  const root = document.documentElement;
-  if(!t || t==='light') root.removeAttribute('data-theme');
-  else root.setAttribute('data-theme', t);
-
-  // Update browser UI bar color to match background
-  const bg = getComputedStyle(root).getPropertyValue('--surface')?.trim() || '#f8fafc';
-  if(themeColorMeta) themeColorMeta.setAttribute('content', bg);
-  localStorage.setItem(THEME_KEY, t || 'light');
-}
-
-(function initTheme(){
+// Theme handling
+function loadTheme(){
   const saved = localStorage.getItem(THEME_KEY) || 'light';
-  themeSel.value = saved;
-  applyTheme(saved);
-  themeSel.addEventListener('change', ()=> applyTheme(themeSel.value));
-})();
+  document.documentElement.setAttribute('data-theme', saved);
+  if(themeSel) themeSel.value = saved;
+}
+function saveTheme(theme){
+  localStorage.setItem(THEME_KEY, theme);
+  document.documentElement.setAttribute('data-theme', theme);
+}
+if(themeSel){
+  themeSel.addEventListener('change', ()=> saveTheme(themeSel.value));
+}
+loadTheme();
 
-// ===== Init app =====
 (async function init(){
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
@@ -240,7 +221,20 @@ function applyTheme(t){
 
   // Load CSV deck
   try{
-    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
+    let text;
+    try {
+      text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
+    } catch(fetchError) {
+      // If CSV file not found, use sample data
+      text = `id,front,back
+1,What is the capital of France?,Paris
+2,What is 2 + 2?,4
+3,What color is the sky?,Blue
+4,Who wrote Romeo and Juliet?,William Shakespeare
+5,What is H2O?,Water`;
+      status.textContent='Using sample data';
+    }
+    
     const rows = parseCSV(text); if(!rows.length) throw new Error('CSV empty');
     const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
     const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
@@ -248,12 +242,19 @@ function applyTheme(t){
     deck = data.map((r,i)=> ({ id: normalizeId(r[0]||`card${i+1}`), front:(r[1]||'').trim(), back:(r[2]||'').trim(), known:false, seen:0 }));
     const seen = new Set(); for(const c of deck){ let base=c.id,n=2; while(seen.has(c.id)){ c.id=`${base}-${n++}` } seen.add(c.id) }
 
-    loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide');
-    face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. Re-show setting is under ⋯';
-  }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
+    loadProgress(); 
+    if(status.textContent !== 'Using sample data') {
+      status.textContent='Ready';
+    }
+    startBtn.classList.remove('hide');
+    face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don't know. Re-show setting is under ⋯';
+  }catch(e){ 
+    status.textContent='Error loading'; 
+    face.innerHTML='Error: ' + e.message + '<br>Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' 
+  }
 })();
 
-// Buttons & shortcuts (unchanged)
+// Buttons & shortcuts
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -263,29 +264,45 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip (kept)
-['main.card', '#face', '#img'].forEach(sel => {
-  const el = document.querySelector(sel);
-  if (el) el.addEventListener('click', (e) => {
-    if (e.target.closest('.markbar') || e.target.closest('.fabbar') || e.target.closest('#openControls') || e.target.closest('#sheet')) return;
-    flip();
-  });
-});
+// Tap-to-flip: single listener on the card (prevents double flip from bubbling)
+document.querySelector('main.card')?.addEventListener('click', (e) => {
+  if (
+    e.target.closest('.markbar') ||  // green/red buttons
+    e.target.closest('.fabbar')   ||  // Flip/Next bar
+    e.target.closest('#openControls') || // ⋯ button
+    e.target.closest('#sheet')        // bottom sheet
+  ) return;
+  flip();
+}, { passive: true });
 
 function start(){ cursor=-1; showingBack=false; next() }
-function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
+function eligibleIndices(){
+  const skip=skipKnownChk.checked; const mode=modeSel.value;
+  let idx=deck.map((_,i)=>i);
+  if(skip) idx=idx.filter(i=>!deck[i].known);
+  if(mode==='ordered'){
+    const s=Math.max(cursor+1,0);
+    const tail=idx.filter(i=>i>=s);
+    const head=idx.filter(i=>i<s);
+    return tail.length?tail:head;
+  }
+  return idx;
+}
+
 function next(){
   if(!deck.length) return;
+  // 1) If any queued unknown is due, show it now (takes priority)
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
     deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
     return;
   }
+  // 2) Otherwise, pick per mode/skipKnown
   const choices = eligibleIndices();
   if(!choices.length){
     face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
-    hideImage(); idxLabel.textContent='–'; cancelSpeak();
+    hideImage(); idxLabel.textContent='—'; cancelSpeak();
     return;
   }
   cursor = (modeSel.value==='random') ? choices[Math.floor(Math.random()*choices.length)] : choices[0];
@@ -293,14 +310,15 @@ function next(){
 }
 
 function flip(){
-  if(cursor<0) return;
-  if(!cardEl){ showingBack=!showingBack; renderFace('flip'); return; }
+  if (cursor < 0 || isFlipping) return;
+  if (!cardEl) { showingBack = !showingBack; renderFace('flip'); return; }
+  isFlipping = true;
   cardEl.classList.add('flip-anim','flip-phase');
   setTimeout(()=>{
     showingBack = !showingBack; renderFace('flip');
     cardEl.classList.remove('flip-phase');
     cardEl.classList.add('flip-reset');
-    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); }, 240);
+    setTimeout(()=>{ cardEl.classList.remove('flip-anim','flip-reset'); isFlipping=false; }, 240);
   }, 160);
 }
 
@@ -317,23 +335,55 @@ function grade(known){
   saveProgress(); updateStats(); next();
 }
 
-function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML= showingBack? escape(c.back):escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
+function renderFace(trigger){
+  if(cursor<0){ face.textContent='Press Start'; return }
+  const c=deck[cursor];
+  idxLabel.textContent=c.id;
+  face.innerHTML= showingBack? escape(c.back):escape(c.front);
+  if(showingBack){ showImageForId(c.id) } else { hideImage() }
+  updateStats(); autoSpeakCurrent(trigger);
+}
 
 function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt='' }
-function showImageForId(id){ const exts=['png','jpg','jpeg','webp','svg']; let i=0; const tryNext=()=>{ if(i>=exts.length){ hideImage(); return } const src=`assets/images/${id}.${exts[i++]}`; img.onerror=tryNext; img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') }; img.src=src }; tryNext() }
+function showImageForId(id){
+  const exts=['png','jpg','jpeg','webp','svg']; let i=0;
+  const tryNext=()=>{
+    if(i>=exts.length){ hideImage(); return }
+    const src=`assets/images/${id}.${exts[i++]}`;
+    img.onerror=tryNext;
+    img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') };
+    img.src=src;
+  };
+  tryNext();
+}
 
-function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.known).length; const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0); statTotal&& (statTotal.textContent=total); statKnown&& (statKnown.textContent=known); statUnknown&& (statUnknown.textContent=Math.max(0,total-known)); statSeen&& (statSeen.textContent=seen) }
+function updateStats(){
+  const total=deck.length;
+  const known=deck.filter(c=>c.known).length;
+  const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0);
+  statTotal&& (statTotal.textContent=total);
+  statKnown&& (statKnown.textContent=known);
+  statUnknown&& (statUnknown.textContent=Math.max(0,total-known));
+  statSeen&& (statSeen.textContent=seen);
+}
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
-function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
+function loadProgress(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+    const arr=JSON.parse(raw);
+    const map=new Map(arr.map(x=>[x.id,x]));
+    deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } });
+  }catch(e){}
+}
 
-// Swipe-to-grade (left = don't know, right = know)
+// Swipe-to-grade (left = don't know, right = know) for touch
 (function(){
   if(!cardEl) return;
   let startX=0, startY=0, dx=0, active=false;
   const THRESH=90;
   cardEl.addEventListener('touchstart', (e)=>{
     if(e.touches.length!==1) return;
-    if(document.querySelector('#sheet.open')) return;
+    if(document.querySelector('#sheet.open')) return; // ignore when sheet open
     startX = e.touches[0].clientX; startY = e.touches[0].clientY; dx=0; active=true;
     cardEl.classList.add('swiping');
   }, {passive:true});
@@ -341,7 +391,7 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
     if(!active) return;
     const x = e.touches[0].clientX, y = e.touches[0].clientY;
     dx = x - startX; const dy = y - startY;
-    if(Math.abs(dy) > Math.abs(dx) + 20){
+    if(Math.abs(dy) > Math.abs(dx) + 20){ // vertical intent → cancel swiping visuals
       active=false; cardEl.classList.remove('swiping'); cardEl.style.transform=''; return;
     }
     cardEl.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
@@ -370,21 +420,74 @@ function tickPendingAndMaybePop(){
   if(!pending.length) return -1;
   for(const p of pending){ if(p.due>0) p.due--; }
   const idx = pending.findIndex(p=>p.due===0);
-  if(idx>=0){ const id = pending.splice(idx,1)[0].id; const i = deck.findIndex(c=>c.id===id); return i; }
+  if(idx>=0){
+    const id = pending.splice(idx,1)[0].id;
+    const i = deck.findIndex(c=>c.id===id);
+    return i;
+  }
   return -1;
 }
 
-// ===== Audio — delayed to prevent clipping =====
+// ===== Audio – delayed to prevent clipping =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
-function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
+function populateVoiceSelect(){
+  voiceSel.innerHTML='';
+  const opts=voices.length?voices:[{name:'Default',voiceURI:''}];
+  const sorted=opts.slice().sort((a,b)=>{
+    const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase();
+    const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1;
+    const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1;
+    return pa-pb || (a.name||'').localeCompare(b.name||'');
+  });
+  for(const v of sorted){
+    const o=document.createElement('option');
+    o.value=v.voiceURI||v.name||'';
+    o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default';
+    voiceSel.appendChild(o);
+  }
+  if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI }
+}
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
 function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)) }
 function cancelSpeak(){ if(speakTimer){ clearTimeout(speakTimer); speakTimer=null } try{ speechSynthesis.cancel() }catch(e){} }
-function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
-function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return; const u=new SpeechSynthesisUtterance(txt); u.rate=audioPrefs.rate||1; const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI); if(v) u.voice=v; try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){}; setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0) }
+function autoSpeakCurrent(trigger){
+  if(!('speechSynthesis' in window)) return;
+  const c=deck[cursor]; if(!c) return;
+  const text= showingBack? c.back : c.front;
+  const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront;
+  if(!want||!text){ cancelSpeak(); return }
+  const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS;
+  cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay);
+}
+function speak(txt){
+  try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
+  const u=new SpeechSynthesisUtterance(txt);
+  u.rate=audioPrefs.rate||1;
+  const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI);
+  if(v) u.voice=v;
+  try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){};
+  setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0);
+}
 
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
-function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
+function parseCSV(str){
+  const rows=[]; let row=[], cur='', i=0, inQ=false;
+  while(i<str.length){
+    const ch=str[i];
+    if(inQ){
+      if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue }
+      cur+=ch; i++; continue
+    } else {
+      if(ch==='"'){ inQ=true; i++; continue }
+      if(ch===','){ row.push(cur); cur=''; i++; continue }
+      if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue }
+      if(ch==='\r'){ i++; continue }
+      cur+=ch; i++;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') );
+}
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 </script>
 </body>
