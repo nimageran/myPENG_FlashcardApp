@@ -16,9 +16,9 @@
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:#fff}
 
-    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
-    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
-    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border); cursor:pointer;}
+    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px);will-change:transform}
+    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none;cursor:pointer}
+    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border);cursor:pointer}
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
@@ -33,13 +33,23 @@
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
-    /* Bottom sheet controls */
-    .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out;
-      max-height:85vh; overflow:auto; -webkit-overflow-scrolling:touch;}
+    /* Bottom sheet (OPTIONS) — redesigned for iPhone usability */
+    .sheet{
+      position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;
+      border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);
+      box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out;
+      max-height:85vh;overflow:auto;-webkit-overflow-scrolling:touch
+    }
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
-    .sheet .titlebar{position:sticky; top:0; z-index:1; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center; padding:6px 36px 8px}
-    .sheet .close{position:absolute; right:10px; top:6px; border:1px solid var(--border); background:#fff; color:var(--ink); border-radius:12px; padding:6px 10px; min-height:36px}
+    .sheet .titlebar{
+      position:sticky;top:0;z-index:1;background:#fff;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;padding:6px 36px 8px
+    }
+    .sheet .close{
+      position:absolute;right:10px;top:6px;border:1px solid var(--border);
+      background:#fff;color:var(--ink);border-radius:12px;padding:6px 10px;min-height:36px
+    }
     .sheet .content{max-width:900px;margin:0 auto;padding:6px clamp(14px,4vw,20px) calc(14px + env(safe-area-inset-bottom))}
     .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
     .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
@@ -47,19 +57,19 @@
     .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);min-height:44px}
 
     /* Flip + Swipe animations */
-    .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
-    .flip-phase{ transform: rotateY(90deg); }
-    .flip-reset{ transform: rotateY(0deg); }
-    .swiping{ transition: none!important; }
-    .swipe-right{ transition: transform .26s ease, opacity .26s ease; transform: translateX(120%) rotate(5deg); opacity:.0 }
-    .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:.0 }
+    .flip-anim{transition:transform .24s ease;transform-style:preserve-3d}
+    .flip-phase{transform:rotateY(90deg)}
+    .flip-reset{transform:rotateY(0deg)}
+    .swiping{transition:none!important}
+    .swipe-right{transition:transform .26s ease,opacity .26s ease;transform:translateX(120%) rotate(5deg);opacity:0}
+    .swipe-left{transition:transform .26s ease,opacity .26s ease;transform:translateX(-120%) rotate(-5deg);opacity:0}
 
     .hide{display:none!important}
     .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:#0f172a}
 
     /* Backdrop behind sheet */
-    .backdrop{ position:fixed; inset:0; z-index:45; background:rgba(0,0,0,.35); opacity:0; pointer-events:none; transition:opacity .2s ease-out }
-    .backdrop.open{ opacity:1; pointer-events:auto }
+    .backdrop{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s ease-out}
+    .backdrop.open{opacity:1;pointer-events:auto}
   </style>
 </head>
 <body>
@@ -178,7 +188,7 @@ const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#stat
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
 
-// === Bottom sheet: easier open/close on iPhone ===
+// ===== Bottom sheet — iPhone-friendly open/close =====
 const backdrop = document.querySelector('#backdrop');
 const closeBtn = document.querySelector('#closeSheet');
 const handleEl = document.querySelector('.sheet .handle');
@@ -190,10 +200,8 @@ function toggleSheet(open){
   sheet.classList.toggle('open', !!open);
   backdrop?.classList.toggle('open', !!open);
   sheet.setAttribute('aria-hidden', open? 'false':'true');
-  // lock background scroll while sheet is open (iPhone-friendly)
-  document.body.style.overflow = open ? 'hidden' : '';
-  // reset any drag transform when closing
-  if (!open) sheet.style.transform = '';
+  document.body.style.overflow = open ? 'hidden' : ''; // lock/unlock page scroll
+  if (!open) sheet.style.transform = ''; // reset drag
 }
 
 backdrop?.addEventListener('click', ()=> toggleSheet(false));
@@ -225,11 +233,12 @@ handleEl?.addEventListener('touchend', ()=>{
   }
 }, {passive:true});
 
-(function init(){
+// ===== Init =====
+(async function init(){
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
 
-  loadVoices().then(populateVoiceSelect);
+  await loadVoices(); populateVoiceSelect();
 
   if(requeueSel){
     requeueSel.value = String(requeueDistance);
@@ -240,7 +249,8 @@ handleEl?.addEventListener('touchend', ()=>{
   }
 
   // Load CSV deck
-  fetch(CSV_URL, {cache:'no-store'}).then(r=>r.text()).then(text=>{
+  try{
+    const text = await (await fetch(CSV_URL, {cache:'no-store'})).text();
     const rows = parseCSV(text); if(!rows.length) throw new Error('CSV empty');
     const header = rows[0].map?.(x=> String(x||'').toLowerCase().trim());
     const hasHeader = header && header[0]==='id' && header[1]==='front' && header[2]==='back';
@@ -250,12 +260,10 @@ handleEl?.addEventListener('touchend', ()=>{
 
     loadProgress(); status.textContent='Ready'; startBtn.classList.remove('hide');
     face.innerHTML = 'Tap <b>Start</b>. Tap to flip. Swipe right = know, left = don’t know. Re-show setting is under ⋯';
-  }).catch(()=>{
-    status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.';
-  });
+  }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// Buttons & shortcuts
+// ===== Buttons & shortcuts (unchanged) =====
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -265,7 +273,7 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip on the whole card (leave as-is)
+// Tap-to-flip (kept)
 ['main.card', '#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
@@ -274,18 +282,17 @@ document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); f
   });
 });
 
+// ===== Core logic (unchanged) =====
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
   if(!deck.length) return;
-  // 1) If any queued unknown is due, show it now (takes priority)
   const revisit = tickPendingAndMaybePop();
   if(revisit >= 0){
     cursor = revisit;
     deck[cursor].seen++; saveProgress(); showingBack=false; renderFace('next');
     return;
   }
-  // 2) Otherwise, pick per mode/skipKnown
   const choices = eligibleIndices();
   if(!choices.length){
     face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
@@ -313,31 +320,63 @@ function grade(known){
   const id = deck[cursor].id;
   if(known){
     deck[cursor].known = true;
-    pending = pending.filter(p=>p.id!==id); // if queued, drop it
+    pending = pending.filter(p=>p.id!==id);
   } else {
     deck[cursor].known = false;
-    queueCard(id); // schedule to come back after N cards
+    queueCard(id);
   }
   saveProgress(); updateStats(); next();
 }
 
-function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML= showingBack? escape(c.back):escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
+function renderFace(trigger){
+  if(cursor<0){ face.textContent='Press Start'; return }
+  const c=deck[cursor];
+  idxLabel.textContent=c.id;
+  face.innerHTML= showingBack? escape(c.back):escape(c.front);
+  if(showingBack){ showImageForId(c.id) } else { hideImage() }
+  updateStats(); autoSpeakCurrent(trigger);
+}
 
 function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt='' }
-function showImageForId(id){ const exts=['png','jpg','jpeg','webp','svg']; let i=0; const tryNext=()=>{ if(i>=exts.length){ hideImage(); return } const src=`assets/images/${id}.${exts[i++]}`; img.onerror=tryNext; img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') }; img.src=src }; tryNext() }
+function showImageForId(id){
+  const exts=['png','jpg','jpeg','webp','svg']; let i=0;
+  const tryNext=()=>{
+    if(i>=exts.length){ hideImage(); return }
+    const src=`assets/images/${id}.${exts[i++]}`;
+    img.onerror=tryNext;
+    img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') };
+    img.src=src;
+  };
+  tryNext();
+}
 
-function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.known).length; const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0); statTotal&& (statTotal.textContent=total); statKnown&& (statKnown.textContent=known); statUnknown&& (statUnknown.textContent=Math.max(0,total-known)); statSeen&& (statSeen.textContent=seen) }
+function updateStats(){
+  const total=deck.length;
+  const known=deck.filter(c=>c.known).length;
+  const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0);
+  statTotal&& (statTotal.textContent=total);
+  statKnown&& (statKnown.textContent=known);
+  statUnknown&& (statUnknown.textContent=Math.max(0,total-known));
+  statSeen&& (statSeen.textContent=seen);
+}
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
-function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
+function loadProgress(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+    const arr=JSON.parse(raw);
+    const map=new Map(arr.map(x=>[x.id,x]));
+    deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } });
+  }catch(e){}
+}
 
-// Swipe-to-grade (left = don't know, right = know) for touch
+// Swipe-to-grade (left = don't know, right = know)
 (function(){
   if(!cardEl) return;
   let startX=0, startY=0, dx=0, active=false;
   const THRESH=90;
   cardEl.addEventListener('touchstart', (e)=>{
     if(e.touches.length!==1) return;
-    if(document.querySelector('#sheet.open')) return; // ignore when sheet open
+    if(document.querySelector('#sheet.open')) return;
     startX = e.touches[0].clientX; startY = e.touches[0].clientY; dx=0; active=true;
     cardEl.classList.add('swiping');
   }, {passive:true});
@@ -345,7 +384,7 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
     if(!active) return;
     const x = e.touches[0].clientX, y = e.touches[0].clientY;
     dx = x - startX; const dy = y - startY;
-    if(Math.abs(dy) > Math.abs(dx) + 20){ // vertical intent → cancel swiping visuals
+    if(Math.abs(dy) > Math.abs(dx) + 20){
       active=false; cardEl.classList.remove('swiping'); cardEl.style.transform=''; return;
     }
     cardEl.style.transform = `translateX(${dx}px) rotate(${dx*0.04}deg)`;
@@ -364,7 +403,7 @@ function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!r
   cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
 })();
 
-// --- Requeue helpers ---
+// --- Requeue helpers (unchanged) ---
 function queueCard(id){
   const existing = pending.find(p=>p.id===id);
   if(existing){ existing.due = requeueDistance; return; }
@@ -374,21 +413,77 @@ function tickPendingAndMaybePop(){
   if(!pending.length) return -1;
   for(const p of pending){ if(p.due>0) p.due--; }
   const idx = pending.findIndex(p=>p.due===0);
-  if(idx>=0){ const id = pending.splice(idx,1)[0].id; const i = deck.findIndex(c=>c.id===id); return i; }
+  if(idx>=0){
+    const id = pending.splice(idx,1)[0].id;
+    const i = deck.findIndex(c=>c.id===id);
+    return i;
+  }
   return -1;
 }
 
-// ===== Audio — delayed to prevent clipping =====
+// ===== Audio (unchanged) =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
-function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
+function populateVoiceSelect(){
+  voiceSel.innerHTML='';
+  const opts=voices.length?voices:[{name:'Default',voiceURI:''}];
+  const sorted=opts.slice().sort((a,b)=>{
+    const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase();
+    const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1;
+    const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1;
+    return pa-pb || (a.name||'').localeCompare(b.name||'');
+  });
+  for(const v of sorted){
+    const o=document.createElement('option');
+    o.value=v.voiceURI||v.name||'';
+    o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default';
+    voiceSel.appendChild(o);
+  }
+  if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI }
+}
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
 function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)) }
 function cancelSpeak(){ if(speakTimer){ clearTimeout(speakTimer); speakTimer=null } try{ speechSynthesis.cancel() }catch(e){} }
-function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
-function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return; const u=new SpeechSynthesisUtterance(txt); u.rate=audioPrefs.rate||1; const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI); if(v) u.voice=v; try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){}; setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0) }
+function autoSpeakCurrent(trigger){
+  if(!('speechSynthesis' in window)) return;
+  const c=deck[cursor]; if(!c) return;
+  const text= showingBack? c.back : c.front;
+  const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront;
+  if(!want||!text){ cancelSpeak(); return }
+  const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS;
+  cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay);
+}
+function speak(txt){
+  try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
+  const u=new SpeechSynthesisUtterance(txt);
+  u.rate=audioPrefs.rate||1;
+  const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI);
+  if(v) u.voice=v;
+  try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){};
+  setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0);
+}
 
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
-function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
+function parseCSV(str){
+  const rows=[]; let row=[], cur='', i=0, inQ=false;
+  while(i<str.length){
+    const ch=str[i];
+    if(inQ){
+      if(ch==='"'){
+        if(str[i+1]==='"'){ cur+='"'; i+=2; continue }
+        inQ=false; i++; continue
+      }
+      cur+=ch; i++; continue
+    } else {
+      if(ch==='"'){ inQ=true; i++; continue }
+      if(ch===','){ row.push(cur); cur=''; i++; continue }
+      if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue }
+      if(ch==='\r'){ i++; continue }
+      cur+=ch; i++;
+    }
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') );
+}
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 </script>
 </body>
