@@ -1,27 +1,41 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Nima Flashcards — Clean UI + Animations + Requeue</title>
-  <meta name="theme-color" content="#f8fafc" />
+  <meta id="metaThemeColor" name="theme-color" content="#f8fafc" />
   <style>
+    /* Base variables (Light) */
     :root{
-      --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b;
-      --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626;
+      --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb;
+      --ink:#0f172a; --muted:#64748b;
+      --accent:#2563eb; --accent-ink:#ffffff;
+      --radius:18px; --ok:#16a34a; --bad:#dc2626;
     }
-    /* ===== Themes (override CSS vars via [data-theme]) ===== */
-    html[data-theme="dark"]{
-      --bg:#0b1220; --surface:#111827; --border:#334155; --ink:#e5e7eb; --muted:#94a3b8;
-      --accent:#3b82f6; --accent-ink:#0b1220; --ok:#22c55e; --bad:#ef4444;
+
+    /* THEME: Dark */
+    :root[data-theme="dark"]{
+      --bg:#0b1220; --surface:#0f172a; --border:#1f2937;
+      --ink:#e5e7eb; --muted:#94a3b8;
+      --accent:#60a5fa; --accent-ink:#0b1220;
+      --ok:#22c55e; --bad:#ef4444;
     }
-    html[data-theme="neon-purple"]{
-      --bg:#0b0215; --surface:#130527; --border:#3b0a6e; --ink:#f5eaff; --muted:#c8a9ff;
-      --accent:#a855f7; --accent-ink:#1a0b2e; --ok:#22e58a; --bad:#ff5470;
+
+    /* THEME: Light Neon Purple */
+    :root[data-theme="neon-purple"]{
+      --bg:#ffffff; --surface:#faf5ff; --border:#e9d5ff;
+      --ink:#281c3a; --muted:#7c74a0;
+      --accent:#a855f7; --accent-ink:#ffffff;
+      --ok:#22c55e; --bad:#ef4444;
     }
-    html[data-theme="neon-blue"]{
-      --bg:#021018; --surface:#041c2a; --border:#0e5e89; --ink:#e6f6ff; --muted:#a6d0e8;
-      --accent:#22d3ee; --accent-ink:#001018; --ok:#34f5c5; --bad:#ff6b6b;
+
+    /* THEME: Light Neon Blue */
+    :root[data-theme="neon-blue"]{
+      --bg:#ffffff; --surface:#eef6ff; --border:#dbeafe;
+      --ink:#0b1a33; --muted:#5c6c86;
+      --accent:#3b82f6; --accent-ink:#ffffff;
+      --ok:#22c55e; --bad:#ef4444;
     }
 
     *{box-sizing:border-box}
@@ -29,9 +43,13 @@
     .wrap{max-width:min(900px,92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) calc(56px + env(safe-area-inset-bottom))}
 
     header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(255,255,255,.95),rgba(255,255,255,0));backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px}
+    /* make header gradient adapt in dark mode */
+    :root[data-theme="dark"] header{ background:linear-gradient(to bottom, rgba(11,18,32,.95), rgba(11,18,32,0)); }
+
     h1{font-size:clamp(18px,2vw,20px);margin:0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:#fff}
+    :root[data-theme="dark"] .pill{ background: #0f172a; }
 
     main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
     .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
@@ -41,26 +59,31 @@
 
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
-    .btn.ok{background:var(--ok);color:#001; border-color:transparent}
-    .btn.bad{background:var(--bad);color:#fff;border-color:transparent}
+    .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
+    .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
+    :root[data-theme="dark"] .btn{ background:#0f172a; border-color:#22314a; }
 
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+    :root[data-theme="dark"] .fabbar{ background:linear-gradient(to top, rgba(11,18,32,.96), rgba(11,18,32,.70), transparent); }
 
-    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:color-mix(in oklab, var(--accent), #000 25%);font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
+    /* Bottom sheet controls */
     .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
+    :root[data-theme="dark"] .sheet{ background:#0f172a; box-shadow:0 -12px 30px rgba(0,0,0,.4)}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
+    :root[data-theme="dark"] .sheet .handle{ background:#334155 }
     .sheet .content{max-width:900px;margin:0 auto;padding:6px clamp(14px,4vw,20px) calc(14px + env(safe-area-inset-bottom))}
     .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
     .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
+    :root[data-theme="dark"] .fieldset{ background:#0b1220; }
     .label{display:block;font-size:12px;color:#475569;margin-bottom:6px}
+    :root[data-theme="dark"] .label{ color:#93a4c1 }
     .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);min-height:44px}
-
-    /* small select for header */
-    .select.small{width:auto;min-height:36px;padding:6px 10px;font-size:12px}
+    :root[data-theme="dark"] .select,:root[data-theme="dark"] .chk,:root[data-theme="dark"] .range{ background:#0f172a; color:var(--ink); border-color:#22314a }
 
     /* Flip + Swipe animations */
     .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
@@ -72,6 +95,16 @@
 
     .hide{display:none!important}
     .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:#0f172a}
+    :root[data-theme="dark"] .kbd{ background:#0f172a; color:#e5e7eb; border-color:#22314a }
+
+    /* Tiny theme dropdown styling to look pill-ish */
+    .themeSel{
+      appearance:none; -webkit-appearance:none;
+      padding:6px 28px 6px 10px; border-radius:999px; border:1px solid var(--border);
+      background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="%2364758b"><path d="M5.5 7.5L10 12l4.5-4.5"/></svg>') no-repeat right 8px center/14px;
+      color:var(--muted); font-size:12px; min-height:32px;
+    }
+    :root[data-theme="dark"] .themeSel{ background:#0f172a url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="%2394a3b8"><path d="M5.5 7.5L10 12l4.5-4.5"/></svg>') no-repeat right 8px center/14px; color:#94a3b8; border-color:#22314a }
   </style>
 </head>
 <body>
@@ -80,12 +113,12 @@
     <h1>Flashcards — NPPE (Nima)</h1>
     <div class="row">
       <span id="status" class="pill">Loading…</span>
-      <!-- Theme quick switcher (header) -->
-      <select id="themeTop" class="select small" title="Theme">
+      <!-- New: compact theme selector -->
+      <select id="themeSel" class="themeSel" title="Theme">
         <option value="light">Light</option>
         <option value="dark">Dark</option>
-        <option value="neon-purple">Neon Purple</option>
-        <option value="neon-blue">Neon Blue</option>
+        <option value="neon-purple">Light Neon Purple</option>
+        <option value="neon-blue">Light Neon Blue</option>
       </select>
       <button id="openControls" class="btn icon ghost" title="Controls">⋯</button>
       <button id="start" class="btn primary hide">Start</button>
@@ -165,24 +198,22 @@
           <span class="pill">Seen: <b id="statSeen">0</b></span>
         </div>
       </div>
-
-      <!-- Theme selector inside the Options panel (bottom) -->
+      <!-- (Optional) You can duplicate the theme selector here if you ever want it inside the panel:
       <div class="fieldset">
         <label class="label">Theme</label>
-        <select id="themeSheet" class="select">
+        <select id="themeSelPanel" class="select">
           <option value="light">Light</option>
           <option value="dark">Dark</option>
-          <option value="neon-purple">Neon Purple</option>
-          <option value="neon-blue">Neon Blue</option>
+          <option value="neon-purple">Light Neon Purple</option>
+          <option value="neon-blue">Light Neon Blue</option>
         </select>
-      </div>
-
+      </div> -->
     </div>
   </div>
 </div>
 
 <script>
-// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
+// ===== Core (unchanged) + Theme Picker =====
 
 const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
@@ -202,30 +233,35 @@ const modeSel=$('#mode'), skipKnownChk=$('#skipKnown'), idxLabel=$('#indexLabel'
 const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#statUnknown'), statSeen=$('#statSeen');
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
-const themeTop = document.querySelector('#themeTop');
-const themeSheet = document.querySelector('#themeSheet');
+const themeSel = document.querySelector('#themeSel');
+// const themeSelPanel = document.querySelector('#themeSelPanel'); // only if you uncomment in HTML
 
-// ===== Theme handling =====
+// THEME: apply + persist + set meta theme-color
 function applyTheme(name){
-  document.documentElement.setAttribute('data-theme', name);
+  const root = document.documentElement;
+  if(!name) name = 'light';
+  if(name === 'light') root.removeAttribute('data-theme');
+  else root.setAttribute('data-theme', name);
   localStorage.setItem(THEME_KEY, name);
-  // Update the browser bar color on mobile to match bg
-  try{
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if(meta){
-      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#000000';
-      meta.setAttribute('content', bg);
-    }
-  }catch(e){}
-  // keep both selectors in sync if both exist
-  if(themeTop && themeTop.value !== name) themeTop.value = name;
-  if(themeSheet && themeSheet.value !== name) themeSheet.value = name;
+
+  // set browser theme-color to match background (helps iPhone status bar tint)
+  const meta = document.querySelector('#metaThemeColor');
+  const temp = document.createElement('div');
+  temp.style.display='none'; document.body.appendChild(temp);
+  // read computed bg color from :root context by applying a tiny element
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#ffffff';
+  if(meta) meta.setAttribute('content', bg || '#ffffff');
+  document.body.removeChild(temp);
 }
-// initial theme
-applyTheme(localStorage.getItem(THEME_KEY) || 'light');
-// listeners
-themeTop?.addEventListener('change', ()=> applyTheme(themeTop.value));
-themeSheet?.addEventListener('change', ()=> applyTheme(themeSheet.value));
+(function initTheme(){
+  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(saved);
+  if(themeSel) themeSel.value = saved;
+  // if(themeSelPanel) themeSelPanel.value = saved;
+})();
+themeSel?.addEventListener('change', ()=> applyTheme(themeSel.value));
+// If you add the panel selector, keep them in sync like this:
+// themeSelPanel?.addEventListener('change', ()=> { themeSel.value = themeSelPanel.value; applyTheme(themeSelPanel.value) });
 
 openBtn.addEventListener('click', ()=> toggleSheet(true));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
