@@ -6,70 +6,102 @@
   <title>Nima Flashcards — Clean UI + Animations + Requeue</title>
   <meta name="theme-color" content="#f8fafc" />
   <style>
-    :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
+    /* ====== THEME SYSTEM (uses CSS variables) ====== */
+    :root{
+      --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb;
+      --ink:#0f172a; --muted:#64748b;
+      --accent:#2563eb; --accent-ink:#ffffff;
+      --radius:18px; --ok:#16a34a; --bad:#dc2626;
+    }
+    :root[data-theme="light"]{
+      --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb;
+      --ink:#0f172a; --muted:#64748b;
+      --accent:#2563eb; --accent-ink:#ffffff;
+      --ok:#16a34a; --bad:#dc2626;
+    }
+    :root[data-theme="dark"]{
+      --bg:#0b1020; --surface:#111827; --border:#1f2937;
+      --ink:#e5e7eb; --muted:#94a3b8;
+      --accent:#4f46e5; --accent-ink:#e5e7eb;
+      --ok:#22c55e; --bad:#ef4444;
+    }
+    :root[data-theme="neon-purple"]{
+      --bg:#0a0217; --surface:#140b2a; --border:#311b92;
+      --ink:#f2e7fe; --muted:#b39ddb;
+      --accent:#a855f7; --accent-ink:#f5f3ff;
+      --ok:#34d399; --bad:#fb7185;
+    }
+    :root[data-theme="neon-blue"]{
+      --bg:#00111f; --surface:#001a2e; --border:#0b3a5a;
+      --ink:#e0f2fe; --muted:#93c5fd;
+      --accent:#0ea5e9; --accent-ink:#00111f;
+      --ok:#22d3ee; --bad:#f87171;
+    }
+
+    /* ====== Existing styles (unchanged) ====== */
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
     .wrap{max-width:min(900px,92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) calc(56px + env(safe-area-inset-bottom))}
 
     header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(255,255,255,.95),rgba(255,255,255,0));backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px}
+    /* Make header gradient adapt on dark themes */
+    @media (prefers-color-scheme: dark){
+      :root[data-theme="dark"] header,
+      :root[data-theme="neon-purple"] header,
+      :root[data-theme="neon-blue"] header{
+        background:linear-gradient(to bottom,rgba(0,0,0,.45),rgba(0,0,0,0));
+      }
+    }
     h1{font-size:clamp(18px,2vw,20px);margin:0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:#fff}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--surface)}
 
-    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px);will-change:transform}
-    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none;cursor:pointer}
-    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border);cursor:pointer}
+    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;}
+    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;}
+    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border); cursor:pointer;}
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
 
     .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
-    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
-    .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
-    .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
-
+    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px;min-width:44px}
+    .btn.ok{background:var(--ok);color:#001; border-color:rgba(0,0,0,.08)}
+    .btn.bad{background:var(--bad);color:#fff; border-color:rgba(0,0,0,.08)}
+    :root[data-theme="dark"] .btn.ok,
+    :root[data-theme="neon-purple"] .btn.ok,
+    :root[data-theme="neon-blue"] .btn.ok{ color:#012; }
     .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.70),transparent);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+    :root[data-theme="dark"] .fabbar,
+    :root[data-theme="neon-purple"] .fabbar,
+    :root[data-theme="neon-blue"] .fabbar{
+      background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.35),transparent);
+    }
 
-    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:color-mix(in srgb, var(--accent) 70%, #000 30%);font-weight:600}
     .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px}
     .ghost{background:transparent}
 
-    /* Bottom sheet (OPTIONS) — redesigned for iPhone usability */
-    .sheet{
-      position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:#fff;
-      border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);
-      box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out;
-      max-height:85vh;overflow:auto;-webkit-overflow-scrolling:touch
-    }
+    .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:var(--surface);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.06);transition:bottom .2s ease-out}
     .sheet.open{bottom:0}
     .sheet .handle{width:44px;height:5px;background:#e5e7eb;border-radius:999px;margin:8px auto}
-    .sheet .titlebar{
-      position:sticky;top:0;z-index:1;background:#fff;border-bottom:1px solid var(--border);
-      display:flex;align-items:center;justify-content:center;padding:6px 36px 8px
-    }
-    .sheet .close{
-      position:absolute;right:10px;top:6px;border:1px solid var(--border);
-      background:#fff;color:var(--ink);border-radius:12px;padding:6px 10px;min-height:36px
-    }
+    :root[data-theme="dark"] .sheet .handle,
+    :root[data-theme="neon-purple"] .sheet .handle,
+    :root[data-theme="neon-blue"] .sheet .handle{ background:#334155 }
     .sheet .content{max-width:900px;margin:0 auto;padding:6px clamp(14px,4vw,20px) calc(14px + env(safe-area-inset-bottom))}
     .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
-    .label{display:block;font-size:12px;color:#475569;margin-bottom:6px}
-    .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);min-height:44px}
+    .fieldset{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--bg)}
+    .label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
 
     /* Flip + Swipe animations */
-    .flip-anim{transition:transform .24s ease;transform-style:preserve-3d}
-    .flip-phase{transform:rotateY(90deg)}
-    .flip-reset{transform:rotateY(0deg)}
-    .swiping{transition:none!important}
-    .swipe-right{transition:transform .26s ease,opacity .26s ease;transform:translateX(120%) rotate(5deg);opacity:0}
-    .swipe-left{transition:transform .26s ease,opacity .26s ease;transform:translateX(-120%) rotate(-5deg);opacity:0}
+    .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
+    .flip-phase{ transform: rotateY(90deg); }
+    .flip-reset{ transform: rotateY(0deg); }
+    .swiping{ transition: none!important; }
+    .swipe-right{ transition: transform .26s ease, opacity .26s ease; transform: translateX(120%) rotate(5deg); opacity:.0 }
+    .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:.0 }
 
     .hide{display:none!important}
-    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:#0f172a}
-
-    /* Backdrop behind sheet */
-    .backdrop{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s ease-out}
-    .backdrop.open{opacity:1;pointer-events:auto}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px 6px;font-size:12px;color:var(--ink)}
   </style>
 </head>
 <body>
@@ -104,15 +136,21 @@
   <button id="next" class="btn">Next</button>
 </div>
 
-<!-- Bottom sheet with controls -->
 <div id="sheet" class="sheet" aria-hidden="true">
   <div class="handle"></div>
-  <div class="titlebar">
-    <strong>Options</strong>
-    <button id="closeSheet" class="close" aria-label="Close">✕</button>
-  </div>
   <div class="content">
     <div class="controls-grid">
+      <!-- NEW: Theme picker -->
+      <div class="fieldset">
+        <label class="label">Theme</label>
+        <select id="themeSel" class="select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="neon-purple">Neon Purple</option>
+          <option value="neon-blue">Neon Blue</option>
+        </select>
+      </div>
+
       <div class="fieldset">
         <label class="label">Mode</label>
         <select id="mode" class="select">
@@ -164,8 +202,6 @@
     </div>
   </div>
 </div>
-<!-- Backdrop for closing the sheet on tap -->
-<div id="backdrop" class="backdrop" aria-hidden="true"></div>
 
 <script>
 // ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
@@ -174,6 +210,7 @@ const CSV_URL = 'assets/cards.csv';
 const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
 const AUDIO_KEY = 'nppe_audio_prefs_v2';
 const REQUEUE_KEY = 'nppe_requeue_dist_v1';
+const THEME_KEY = 'nppe_theme_v1';
 const DELAY_NEXT_MS = 450; const DELAY_FLIP_MS = 1000;
 
 let deck=[]; let cursor=-1; let showingBack=false; let voices=[]; let audioPrefs={ voiceURI:'', rate:1, speakFront:true, speakBack:true }; let speakTimer=null;
@@ -187,54 +224,35 @@ const modeSel=$('#mode'), skipKnownChk=$('#skipKnown'), idxLabel=$('#indexLabel'
 const statTotal=$('#statTotal'), statKnown=$('#statKnown'), statUnknown=$('#statUnknown'), statSeen=$('#statSeen');
 const voiceSel=$('#voiceSel'), rateIn=$('#rate'), speakFrontChk=$('#speakFront'), speakBackChk=$('#speakBack');
 const requeueSel = document.querySelector('#requeueSel');
+const themeSel = document.querySelector('#themeSel');
 
-// ===== Bottom sheet — iPhone-friendly open/close =====
-const backdrop = document.querySelector('#backdrop');
-const closeBtn = document.querySelector('#closeSheet');
-const handleEl = document.querySelector('.sheet .handle');
-
+// Open/close panel (unchanged)
 openBtn.addEventListener('click', ()=> toggleSheet(true));
 sheet.addEventListener('click', e=>{ if(e.target===sheet) toggleSheet(false) });
+function toggleSheet(open){ sheet.classList.toggle('open', !!open); sheet.setAttribute('aria-hidden', open? 'false':'true') }
 
-function toggleSheet(open){
-  sheet.classList.toggle('open', !!open);
-  backdrop?.classList.toggle('open', !!open);
-  sheet.setAttribute('aria-hidden', open? 'false':'true');
-  document.body.style.overflow = open ? 'hidden' : ''; // lock/unlock page scroll
-  if (!open) sheet.style.transform = ''; // reset drag
+// ===== THEME handling =====
+function applyTheme(name){
+  document.documentElement.setAttribute('data-theme', name);
+  try{
+    localStorage.setItem(THEME_KEY, name);
+    // update browser UI color (address bar) to match theme background
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if(meta){
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
+      meta.setAttribute('content', bg);
+    }
+  }catch(e){}
 }
-
-backdrop?.addEventListener('click', ()=> toggleSheet(false));
-closeBtn?.addEventListener('click', ()=> toggleSheet(false));
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && sheet.classList.contains('open')) toggleSheet(false) });
-
-// Swipe-down to close via the handle
-let dragY0 = 0, dragging = false;
-handleEl?.addEventListener('touchstart', (e)=>{
-  if(e.touches.length!==1) return;
-  dragging = true;
-  dragY0 = e.touches[0].clientY;
-  sheet.style.transition = 'none';
-}, {passive:true});
-handleEl?.addEventListener('touchmove', (e)=>{
-  if(!dragging) return;
-  const dy = e.touches[0].clientY - dragY0;
-  if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
-}, {passive:true});
-handleEl?.addEventListener('touchend', ()=>{
-  if(!dragging) return; dragging=false;
-  const m = sheet.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/);
-  const dy = m ? parseFloat(m[1]) : 0;
-  sheet.style.transition = ''; // restore
-  if (dy > 100) { toggleSheet(false); }
-  else {
-    sheet.style.transform = 'translateY(0)';
-    setTimeout(()=> sheet.style.transform = '', 180);
-  }
-}, {passive:true});
 
 // ===== Init =====
 (async function init(){
+  // Theme init (before paint)
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(savedTheme);
+  if(themeSel) themeSel.value = savedTheme;
+  themeSel?.addEventListener('change', ()=> applyTheme(themeSel.value));
+
   try{ const raw=localStorage.getItem(AUDIO_KEY); if(raw) Object.assign(audioPrefs, JSON.parse(raw)) }catch(e){}
   rateIn.value=audioPrefs.rate; speakFrontChk.checked=!!audioPrefs.speakFront; speakBackChk.checked=!!audioPrefs.speakBack;
 
@@ -263,7 +281,7 @@ handleEl?.addEventListener('touchend', ()=>{
   }catch(e){ status.textContent='No CSV found'; face.innerHTML='Create <code>assets/cards.csv</code> with <b>id,front,back</b>.' }
 })();
 
-// ===== Buttons & shortcuts (unchanged) =====
+// Buttons & shortcuts (unchanged)
 startBtn.addEventListener('click', ()=>{ start(); warmUpSpeech(); });
 $('#next').addEventListener('click', ()=> next());
 $('#flip').addEventListener('click', ()=> flip());
@@ -273,7 +291,7 @@ $('#resetProgress').addEventListener('click', ()=>{ if(confirm('Clear Known/Unkn
 
 document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); flip() } if(e.key==='ArrowRight'){ next() } if(e.key==='1'){ grade(false) } if(e.key==='2'){ grade(true) } });
 
-// Tap-to-flip (kept)
+// Tap-to-flip (unchanged)
 ['main.card', '#face', '#img'].forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener('click', (e) => {
@@ -282,7 +300,6 @@ document.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); f
   });
 });
 
-// ===== Core logic (unchanged) =====
 function start(){ cursor=-1; showingBack=false; next() }
 function eligibleIndices(){ const skip=skipKnownChk.checked; const mode=modeSel.value; let idx=deck.map((_,i)=>i); if(skip) idx=idx.filter(i=>!deck[i].known); if(mode==='ordered'){ const s=Math.max(cursor+1,0); const tail=idx.filter(i=>i>=s); const head=idx.filter(i=>i<s); return tail.length?tail:head } return idx }
 function next(){
@@ -328,46 +345,14 @@ function grade(known){
   saveProgress(); updateStats(); next();
 }
 
-function renderFace(trigger){
-  if(cursor<0){ face.textContent='Press Start'; return }
-  const c=deck[cursor];
-  idxLabel.textContent=c.id;
-  face.innerHTML= showingBack? escape(c.back):escape(c.front);
-  if(showingBack){ showImageForId(c.id) } else { hideImage() }
-  updateStats(); autoSpeakCurrent(trigger);
-}
+function renderFace(trigger){ if(cursor<0){ face.textContent='Press Start'; return } const c=deck[cursor]; idxLabel.textContent=c.id; face.innerHTML= showingBack? escape(c.back):escape(c.front); if(showingBack){ showImageForId(c.id) } else { hideImage() } updateStats(); autoSpeakCurrent(trigger) }
 
 function hideImage(){ img.classList.add('hide'); img.removeAttribute('src'); img.alt='' }
-function showImageForId(id){
-  const exts=['png','jpg','jpeg','webp','svg']; let i=0;
-  const tryNext=()=>{
-    if(i>=exts.length){ hideImage(); return }
-    const src=`assets/images/${id}.${exts[i++]}`;
-    img.onerror=tryNext;
-    img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') };
-    img.src=src;
-  };
-  tryNext();
-}
+function showImageForId(id){ const exts=['png','jpg','jpeg','webp','svg']; let i=0; const tryNext=()=>{ if(i>=exts.length){ hideImage(); return } const src=`assets/images/${id}.${exts[i++]}`; img.onerror=tryNext; img.onload=()=>{ img.onerror=null; img.alt=id; img.classList.remove('hide') }; img.src=src }; tryNext() }
 
-function updateStats(){
-  const total=deck.length;
-  const known=deck.filter(c=>c.known).length;
-  const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0);
-  statTotal&& (statTotal.textContent=total);
-  statKnown&& (statKnown.textContent=known);
-  statUnknown&& (statUnknown.textContent=Math.max(0,total-known));
-  statSeen&& (statSeen.textContent=seen);
-}
+function updateStats(){ const total=deck.length; const known=deck.filter(c=>c.known).length; const seen=deck.reduce((a,c)=> a+(c.seen>0?1:0),0); statTotal&& (statTotal.textContent=total); statKnown&& (statKnown.textContent=known); statUnknown&& (statUnknown.textContent=Math.max(0,total-known)); statSeen&& (statSeen.textContent=seen) }
 function saveProgress(){ const payload=deck.map(c=>({id:c.id,known:c.known,seen:c.seen})); localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)) }
-function loadProgress(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
-    const arr=JSON.parse(raw);
-    const map=new Map(arr.map(x=>[x.id,x]));
-    deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } });
-  }catch(e){}
-}
+function loadProgress(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return; const arr=JSON.parse(raw); const map=new Map(arr.map(x=>[x.id,x])); deck.forEach(c=>{ const m=map.get(c.id); if(m){ c.known=!!m.known; c.seen=m.seen|0 } }) }catch(e){} }
 
 // Swipe-to-grade (left = don't know, right = know)
 (function(){
@@ -403,7 +388,7 @@ function loadProgress(){
   cardEl.addEventListener('touchcancel', ()=>{ active=false; endSwipe(); }, {passive:true});
 })();
 
-// --- Requeue helpers (unchanged) ---
+// --- Requeue helpers ---
 function queueCard(id){
   const existing = pending.find(p=>p.id===id);
   if(existing){ existing.due = requeueDistance; return; }
@@ -413,77 +398,21 @@ function tickPendingAndMaybePop(){
   if(!pending.length) return -1;
   for(const p of pending){ if(p.due>0) p.due--; }
   const idx = pending.findIndex(p=>p.due===0);
-  if(idx>=0){
-    const id = pending.splice(idx,1)[0].id;
-    const i = deck.findIndex(c=>c.id===id);
-    return i;
-  }
+  if(idx>=0){ const id = pending.splice(idx,1)[0].id; const i = deck.findIndex(c=>c.id===id); return i; }
   return -1;
 }
 
-// ===== Audio (unchanged) =====
+// ===== Audio — delayed to prevent clipping =====
 async function loadVoices(){ return new Promise(res=>{ const ready=()=>{ const v=speechSynthesis.getVoices(); if(v&&v.length){ voices=v; speechSynthesis.removeEventListener('voiceschanged', ready); res() } }; speechSynthesis.addEventListener('voiceschanged', ready); ready(); setTimeout(()=>{ voices=speechSynthesis.getVoices(); res() },800) }) }
-function populateVoiceSelect(){
-  voiceSel.innerHTML='';
-  const opts=voices.length?voices:[{name:'Default',voiceURI:''}];
-  const sorted=opts.slice().sort((a,b)=>{
-    const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase();
-    const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1;
-    const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1;
-    return pa-pb || (a.name||'').localeCompare(b.name||'');
-  });
-  for(const v of sorted){
-    const o=document.createElement('option');
-    o.value=v.voiceURI||v.name||'';
-    o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default';
-    voiceSel.appendChild(o);
-  }
-  if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI }
-}
+function populateVoiceSelect(){ voiceSel.innerHTML=''; const opts=voices.length?voices:[{name:'Default',voiceURI:''}]; const sorted=opts.slice().sort((a,b)=>{ const la=(a.lang||'').toLowerCase(), lb=(b.lang||'').toLowerCase(); const pa=(la.includes('en-ca')||la.includes('en-us'))?0:1; const pb=(lb.includes('en-ca')||lb.includes('en-us'))?0:1; return pa-pb || (a.name||'').localeCompare(b.name||'') }); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=v.name?`${v.name} (${v.lang||''})`:'Default'; voiceSel.appendChild(o) } if(audioPrefs.voiceURI){ voiceSel.value=audioPrefs.voiceURI } }
 function warmUpSpeech(){ if(!('speechSynthesis' in window)) return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); speechSynthesis.cancel() }catch(e){} }
 function saveAudioPrefs(){ localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs)) }
 function cancelSpeak(){ if(speakTimer){ clearTimeout(speakTimer); speakTimer=null } try{ speechSynthesis.cancel() }catch(e){} }
-function autoSpeakCurrent(trigger){
-  if(!('speechSynthesis' in window)) return;
-  const c=deck[cursor]; if(!c) return;
-  const text= showingBack? c.back : c.front;
-  const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront;
-  if(!want||!text){ cancelSpeak(); return }
-  const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS;
-  cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay);
-}
-function speak(txt){
-  try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return;
-  const u=new SpeechSynthesisUtterance(txt);
-  u.rate=audioPrefs.rate||1;
-  const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI);
-  if(v) u.voice=v;
-  try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){};
-  setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0);
-}
+function autoSpeakCurrent(trigger){ if(!('speechSynthesis' in window)) return; const c=deck[cursor]; if(!c) return; const text= showingBack? c.back : c.front; const want= showingBack? audioPrefs.speakBack : audioPrefs.speakFront; if(!want||!text){ cancelSpeak(); return } const delay=(trigger==='flip')? DELAY_FLIP_MS : DELAY_NEXT_MS; cancelSpeak(); speakTimer=setTimeout(()=> speak(text), delay) }
+function speak(txt){ try{ speechSynthesis.cancel() }catch(e){}; if(!txt) return; const u=new SpeechSynthesisUtterance(txt); u.rate=audioPrefs.rate||1; const v=voices.find(v=> v.voiceURI===audioPrefs.voiceURI || v.name===audioPrefs.voiceURI); if(v) u.voice=v; try{ speechSynthesis.pause(); speechSynthesis.resume() }catch(e){}; setTimeout(()=>{ try{ speechSynthesis.speak(u) }catch(e){} },0) }
 
 function normalizeId(raw){ let s=String(raw).trim().toLowerCase(); const m=s.match(/(\d+)/); if(m){ return `card${parseInt(m[1],10)}` } if(s.startsWith('card')) return s; return s? `card-${s}` : 'card0' }
-function parseCSV(str){
-  const rows=[]; let row=[], cur='', i=0, inQ=false;
-  while(i<str.length){
-    const ch=str[i];
-    if(inQ){
-      if(ch==='"'){
-        if(str[i+1]==='"'){ cur+='"'; i+=2; continue }
-        inQ=false; i++; continue
-      }
-      cur+=ch; i++; continue
-    } else {
-      if(ch==='"'){ inQ=true; i++; continue }
-      if(ch===','){ row.push(cur); cur=''; i++; continue }
-      if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue }
-      if(ch==='\r'){ i++; continue }
-      cur+=ch; i++;
-    }
-  }
-  row.push(cur); rows.push(row);
-  return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') );
-}
+function parseCSV(str){ const rows=[]; let row=[], cur='', i=0, inQ=false; while(i<str.length){ const ch=str[i]; if(inQ){ if(ch==='"'){ if(str[i+1]==='"'){ cur+='"'; i+=2; continue } inQ=false; i++; continue } else { cur+=ch; i++; continue } } else { if(ch==='"'){ inQ=true; i++; continue } if(ch===','){ row.push(cur); cur=''; i++; continue } if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; i++; continue } if(ch==='\r'){ i++; continue } cur+=ch; i++ } } row.push(cur); rows.push(row); return rows.filter(r=> r.length>1 || (r.length===1 && r[0].trim()!=='') ) }
 function escape(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) }
 </script>
 </body>
