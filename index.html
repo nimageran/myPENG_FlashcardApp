@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Nima Flashcards – Clean UI + Animations + Requeue</title>
+  <meta name="theme-color" content="#f8fafc" />
+  <style>
+    :root{ --bg:#ffffff; --surface:#f8fafc; --border:#e5e7eb; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --accent-ink:#ffffff; --radius:18px; --ok:#16a34a; --bad:#dc2626; }
+    [data-theme="dark"]{ --bg:#0f172a; --surface:#1e293b; --border:#334155; --ink:#f1f5f9; --muted:#94a3b8; --accent:#3b82f6; --accent-ink:#ffffff; --ok:#22c55e; --bad:#ef4444; }
+    [data-theme="neon-purple"]{ --bg:#faf5ff; --surface:#f3e8ff; --border:#e9d5ff; --ink:#581c87; --muted:#7c3aed; --accent:#a855f7; --accent-ink:#ffffff; --ok:#10b981; --bad:#f43f5e; }
+    [data-theme="neon-blue"]{ --bg:#eff6ff; --surface:#dbeafe; --border:#bfdbfe; --ink:#1e3a8a; --muted:#3b82f6; --accent:#0ea5e9; --accent-ink:#ffffff; --ok:#14b8a6; --bad:#f43f5e; }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial;transition:background-color 0.3s, color 0.3s;}
+    .wrap{max-width:min(900px,92vw);margin:0 auto;padding:env(safe-area-inset-top) clamp(12px,2.5vw,24px) calc(56px + env(safe-area-inset-bottom))}
+
+    header{position:sticky;top:0;background:var(--bg);backdrop-filter:saturate(1.2) blur(8px);z-index:20;padding:10px 0 12px;border-bottom:1px solid var(--border);}
+    h1{font-size:clamp(18px,2vw,20px);margin:0}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--bg)}
+
+    main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;margin-top:16px;}
+    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;display:flex;align-items:center;justify-content:center;white-space: pre-line;}
+    .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border); cursor:pointer;}
+    .muted{color:var(--muted);font-size:12px}
+    .grid{display:grid;gap:10px}
+
+    .markbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
+    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;min-height:44px;min-width:44px;font-size:14px;}
+    .btn.ok{background:var(--ok);color:#fff;border-color:#15803d}
+    .btn.bad{background:var(--bad);color:#fff;border-color:#b91c1c}
+
+    .fabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:10px;justify-content:center;align-items:center;padding:12px clamp(10px,3vw,18px) calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);backdrop-filter:blur(8px)}
+
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:#1d4ed8;font-weight:600}
+    .btn.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;padding:0;}
+    .ghost{background:transparent;border:none;}
+
+    .sheet{position:fixed;left:0;right:0;bottom:-100%;z-index:50;background:var(--bg);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);box-shadow:0 -12px 30px rgba(0,0,0,.15);transition:bottom .25s ease-out;max-height:85vh;overflow-y:auto}
+    .sheet.open{bottom:0}
+    .sheet .handle{width:44px;height:5px;background:var(--border);border-radius:999px;margin:12px auto 8px}
+    .sheet-header{position:sticky;top:0;background:var(--bg);z-index:10;padding:12px clamp(14px,4vw,20px);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .sheet-header h2{margin:0;font-size:18px;color:var(--ink);font-weight:600;}
+    .btn.close{width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:28px;line-height:1;font-weight:300;background:var(--surface);min-height:40px;min-width:40px;}
+    .sheet .content{max-width:900px;margin:0 auto;padding:16px clamp(14px,4vw,20px) calc(24px + env(safe-area-inset-bottom))}
+    .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+    .fieldset{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface)}
+    .label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:500;}
+    .select,.chk,.range{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--ink);min-height:44px;font-size:14px;}
+
+    /* Flip + Swipe animations */
+    .flip-anim{ transition: transform .24s ease; transform-style: preserve-3d; }
+    .flip-phase{ transform: rotateY(90deg); }
+    .flip-reset{ transform: rotateY(0deg); }
+    .swiping{ transition: none!important; }
+    .swipe-right{ transition: transform .26s ease, opacity .26s ease; transform: translateX(120%) rotate(5deg); opacity:.0 }
+    .swipe-left{ transition: transform .26s ease, opacity .26s ease; transform: translateX(-120%) rotate(-5deg); opacity:.0 }
+
+    .hide{display:none!important}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;color:var(--ink)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="row" style="justify-content:space-between">
+    <h1>Flashcards – NPPE (Nima)</h1>
+    <div class="row">
+      <span id="status" class="pill">Ready</span>
+      <button id="openControls" class="btn icon ghost" title="Settings">⋯</button>
+      <button id="start" class="btn primary">Start</button>
+    </div>
+  </header>
+
+  <main class="card grid" id="card">
+    <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;">
+      <div class="muted">Tap card or <span class="kbd">Space</span> to flip. Swipe ➡️ = know, ⬅️ = don't know.</div>
+      <span class="pill">ID: <b id="indexLabel">—</b></span>
+    </div>
+
+    <div id="face" class="big">Tap <b>Start</b> to begin. Tap card to flip. Swipe right = know, left = don't know.</div>
+    <img id="img" class="img hide" alt="" />
+
+    <div class="markbar">
+      <button id="again" class="btn bad">I don't know</button>
+      <button id="good" class="btn ok">I know</button>
+    </div>
+  </main>
+</div>
+
+<div class="fabbar">
+  <button id="flip" class="btn">Flip</button>
+  <button id="next" class="btn">Next</button>
+</div>
+
+<div id="sheet" class="sheet" aria-hidden="true">
+  <div class="handle"></div>
+  <div class="sheet-header">
+    <h2>Settings</h2>
+    <button id="closeSheet" class="btn close" aria-label="Close">×</button>
+  </div>
+  <div class="content">
+    <div class="controls-grid">
+      <div class="fieldset">
+        <label class="label">Theme</label>
+        <select id="themeSel" class="select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="neon-purple">Neon Purple</option>
+          <option value="neon-blue">Neon Blue</option>
+        </select>
+      </div>
+      <div class="fieldset">
+        <label class="label">Mode</label>
+        <select id="mode" class="select">
+          <option value="ordered">Ordered</option>
+          <option value="random" selected>Random</option>
+        </select>
+      </div>
+      <div class="fieldset">
+        <label class="label">Skip Known</label>
+        <input id="skipKnown" type="checkbox" class="chk" checked />
+      </div>
+      <div class="fieldset">
+        <label class="label">Audio Voice</label>
+        <select id="voiceSel" class="select"></select>
+      </div>
+      <div class="fieldset">
+        <label class="label">Audio Rate</label>
+        <input id="rate" class="range" type="range" min="0.6" max="1.4" value="1" step="0.1">
+      </div>
+      <div class="fieldset">
+        <label class="label">Auto Speak</label>
+        <div class="row">
+          <label style="font-size:13px;"><input id="speakFront" type="checkbox" style="width:auto;min-height:20px;margin-right:4px;"> Front</label>
+          <label style="font-size:13px;"><input id="speakBack" type="checkbox" style="width:auto;min-height:20px;margin-right:4px;"> Back</label>
+        </div>
+      </div>
+      <div class="fieldset">
+        <label class="label">Re-show "I don't know" after</label>
+        <select id="requeueSel" class="select">
+          <option value="5">5 cards</option>
+          <option value="10" selected>10 cards</option>
+          <option value="20">20 cards</option>
+          <option value="50">50 cards</option>
+        </select>
+      </div>
+      <div class="fieldset">
+        <label class="label">Progress</label>
+        <button id="resetProgress" class="btn" style="width:100%">Reset Known/Seen</button>
+      </div>
+      <div class="fieldset">
+        <label class="label">Stats</label>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <span class="pill">Total: <b id="statTotal">0</b></span>
+          <span class="pill">Known: <b id="statKnown">0</b></span>
+          <span class="pill">Unknown: <b id="statUnknown">0</b></span>
+          <span class="pill">Seen: <b id="statSeen">0</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Clean UI + tap flip + flip animation + swipe-to-grade + requeue unknowns =====
+
+const CSV_URL = 'assets/cards.csv';
+const STORAGE_KEY = 'nppe_cards_progress_clean_v5';
+const AUDIO_KEY = 'nppe_audio_prefs_v2';
+const REQUEUE_KEY = 'nppe_requeue_dist_v1';
+const THEME_KEY = 'nppe_theme_v1';
+const DELAY_NEXT_MS = 450; 
+const DELAY_FLIP_MS = 1000;
+
+let deck = [];
+let cursor = -1;
+let showingBack = false;
+let voices = [];
+let audioPrefs = { voiceURI: '', rate: 1, speakFront: true, speakBack: true };
+let speakTimer = null;
+let requeueDistance = 10;
+let pending = [];
+let isFlipping = false;
+
+const $ = s => document.querySelector(s);
+const face = $('#face');
+const img = $('#img');
+const status = $('#status');
+const startBtn = $('#start');
+const openBtn = $('#openControls');
+const sheet = $('#sheet');
+const cardEl = document.querySelector('main.card');
+const modeSel = $('#mode');
+const skipKnownChk = $('#skipKnown');
+const idxLabel = $('#indexLabel');
+const statTotal = $('#statTotal');
+const statKnown = $('#statKnown');
+const statUnknown = $('#statUnknown');
+const statSeen = $('#statSeen');
+const voiceSel = $('#voiceSel');
+const rateIn = $('#rate');
+const speakFrontChk = $('#speakFront');
+const speakBackChk = $('#speakBack');
+const requeueSel = $('#requeueSel');
+const themeSel = $('#themeSel');
+
+// Sheet controls
+openBtn.addEventListener('click', () => toggleSheet(true));
+$('#closeSheet').addEventListener('click', () => toggleSheet(false));
+sheet.addEventListener('click', e => { if (e.target === sheet) toggleSheet(false) });
+
+function toggleSheet(open) {
+  sheet.classList.toggle('open', !!open);
+  sheet.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+// Theme handling
+function loadTheme() {
+  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  if (themeSel) themeSel.value = saved;
+}
+
+function saveTheme(theme) {
+  localStorage.setItem(THEME_KEY, theme);
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+if (themeSel) {
+  themeSel.addEventListener('change', () => saveTheme(themeSel.value));
+}
+
+// Initialize
+(async function init() {
+  loadTheme();
+  
+  // Load audio prefs
+  try {
+    const raw = localStorage.getItem(AUDIO_KEY);
+    if (raw) Object.assign(audioPrefs, JSON.parse(raw));
+  } catch (e) {}
+  
+  rateIn.value = audioPrefs.rate;
+  speakFrontChk.checked = !!audioPrefs.speakFront;
+  speakBackChk.checked = !!audioPrefs.speakBack;
+
+  await loadVoices();
+  populateVoiceSelect();
+
+  // Load requeue setting
+  try {
+    requeueDistance = parseInt(localStorage.getItem(REQUEUE_KEY) || '10', 10);
+  } catch (e) {
+    requeueDistance = 10;
+  }
+  
+  if (requeueSel) {
+    requeueSel.value = String(requeueDistance);
+    requeueSel.addEventListener('change', () => {
+      requeueDistance = parseInt(requeueSel.value || '10', 10);
+      localStorage.setItem(REQUEUE_KEY, String(requeueDistance));
+    });
+  }
+
+  // Load CSV deck or use sample data
+  try {
+    let text;
+    try {
+      const response = await fetch(CSV_URL, { cache: 'no-store' });
+      if (!response.ok) throw new Error('CSV not found');
+      text = await response.text();
+      status.textContent = 'Ready';
+    } catch (fetchError) {
+      // Use sample data if CSV not found
+      text = `id,front,back
+1,What is the capital of France?,Paris
+2,What is 2 + 2?,4
+3,What color is the sky?,Blue
+4,Who wrote Romeo and Juliet?,William Shakespeare
+5,What is H2O?,Water
+6,How many continents are there?,7
+7,What is the largest planet?,Jupiter
+8,What is the speed of light?,"299,792,458 m/s"`;
+      status.textContent = 'Sample Data';
+    }
+
+    const rows = parseCSV(text);
+    if (!rows.length) throw new Error('No data');
+    
+    const header = rows[0].map(x => String(x || '').toLowerCase().trim());
+    const hasHeader = header && header[0] === 'id' && header[1] === 'front' && header[2] === 'back';
+    const data = (hasHeader ? rows.slice(1) : rows).filter(r => 
+      (r[0] || '').trim() && (r[1] || '').trim() && (r[2] || '').trim()
+    );
+    
+    deck = data.map((r, i) => ({
+      id: normalizeId(r[0] || `card${i + 1}`),
+      front: (r[1] || '').trim(),
+      back: (r[2] || '').trim(),
+      known: false,
+      seen: 0
+    }));
+
+    // Ensure unique IDs
+    const seen = new Set();
+    for (const c of deck) {
+      let base = c.id;
+      let n = 2;
+      while (seen.has(c.id)) {
+        c.id = `${base}-${n++}`;
+      }
+      seen.add(c.id);
+    }
+
+    loadProgress();
+    updateStats();
+    
+  } catch (e) {
+    status.textContent = 'Error';
+    face.innerHTML = 'Error loading cards: ' + e.message;
+    console.error(e);
+  }
+})();
+
+// Button listeners
+startBtn.addEventListener('click', () => {
+  start();
+  warmUpSpeech();
+});
+
+$('#next').addEventListener('click', () => next());
+$('#flip').addEventListener('click', () => flip());
+$('#good').addEventListener('click', () => grade(true));
+$('#again').addEventListener('click', () => grade(false));
+$('#resetProgress').addEventListener('click', () => {
+  if (confirm('Clear Known/Unknown and Seen counts?')) {
+    deck.forEach(c => {
+      c.known = false;
+      c.seen = 0;
+    });
+    saveProgress();
+    updateStats();
+    renderFace();
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    flip();
+  }
+  if (e.key === 'ArrowRight') {
+    next();
+  }
+  if (e.key === '1') {
+    grade(false);
+  }
+  if (e.key === '2') {
+    grade(true);
+  }
+});
+
+// Tap-to-flip
+cardEl.addEventListener('click', (e) => {
+  if (
+    e.target.closest('.markbar') ||
+    e.target.closest('.fabbar') ||
+    e.target.closest('#openControls') ||
+    e.target.closest('#sheet')
+  ) return;
+  flip();
+}, { passive: true });
+
+function start() {
+  cursor = -1;
+  showingBack = false;
+  next();
+}
+
+function eligibleIndices() {
+  const skip = skipKnownChk.checked;
+  const mode = modeSel.value;
+  let idx = deck.map((_, i) => i);
+  
+  if (skip) idx = idx.filter(i => !deck[i].known);
+  
+  if (mode === 'ordered') {
+    const s = Math.max(cursor + 1, 0);
+    const tail = idx.filter(i => i >= s);
+    const head = idx.filter(i => i < s);
+    return tail.length ? tail : head;
+  }
+  
+  return idx;
+}
+
+function next() {
+  if (!deck.length) return;
+  
+  // Check if any queued unknown is due
+  const revisit = tickPendingAndMaybePop();
+  if (revisit >= 0) {
+    cursor = revisit;
+    deck[cursor].seen++;
+    saveProgress();
+    showingBack = false;
+    renderFace('next');
+    return;
+  }
+  
+  // Otherwise pick per mode/skipKnown
+  const choices = eligibleIndices();
+  if (!choices.length) {
+    face.innerHTML = 'All done 🎉 Uncheck <b>Skip Known</b> to review again.';
+    hideImage();
+    idxLabel.textContent = '—';
+    cancelSpeak();
+    return;
+  }
+  
+  cursor = (modeSel.value === 'random') ? 
+    choices[Math.floor(Math.random() * choices.length)] : 
+    choices[0];
+  
+  deck[cursor].seen++;
+  saveProgress();
+  showingBack = false;
+  renderFace('next');
+}
+
+function flip() {
+  if (cursor < 0 || isFlipping) return;
+  
+  if (!cardEl) {
+    showingBack = !showingBack;
+    renderFace('flip');
+    return;
+  }
+  
+  isFlipping = true;
+  cardEl.classList.add('flip-anim', 'flip-phase');
+  
+  setTimeout(() => {
+    showingBack = !showingBack;
+    renderFace('flip');
+    cardEl.classList.remove('flip-phase');
+    cardEl.classList.add('flip-reset');
+    
+    setTimeout(() => {
+      cardEl.classList.remove('flip-anim', 'flip-reset');
+      isFlipping = false;
+    }, 240);
+  }, 160);
+}
+
+function grade(known) {
+  if (cursor < 0) return;
+  
+  const id = deck[cursor].id;
+  
+  if (known) {
+    deck[cursor].known = true;
+    pending = pending.filter(p => p.id !== id);
+  } else {
+    deck[cursor].known = false;
+    queueCard(id);
+  }
+  
+  saveProgress();
+  updateStats();
+  next();
+}
+
+function renderFace(trigger) {
+  if (cursor < 0) {
+    face.textContent = 'Press Start';
+    return;
+  }
+  
+  const c = deck[cursor];
+  idxLabel.textContent = c.id;
+  face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
+  
+  if (showingBack) {
+    showImageForId(c.id);
+  } else {
+    hideImage();
+  }
+  
+  updateStats();
+  autoSpeakCurrent(trigger);
+}
+
+function hideImage() {
+  img.classList.add('hide');
+  img.removeAttribute('src');
+  img.alt = '';
+}
+
+function showImageForId(id) {
+  const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+  let i = 0;
+  
+  const tryNext = () => {
+    if (i >= exts.length) {
+      hideImage();
+      return;
+    }
+    
+    const src = `assets/images/${id}.${exts[i++]}`;
+    img.onerror = tryNext;
+    img.onload = () => {
+      img.onerror = null;
+      img.alt = id;
+      img.classList.remove('hide');
+    };
+    img.src = src;
+  };
+  
+  tryNext();
+}
+
+function updateStats() {
+  const total = deck.length;
+  const known = deck.filter(c => c.known).length;
+  const seen = deck.reduce((a, c) => a + (c.seen > 0 ? 1 : 0), 0);
+  
+  if (statTotal) statTotal.textContent = total;
+  if (statKnown) statKnown.textContent = known;
+  if (statUnknown) statUnknown.textContent = Math.max(0, total - known);
+  if (statSeen) statSeen.textContent = seen;
+}
+
+function saveProgress() {
+  const payload = deck.map(c => ({
+    id: c.id,
+    known: c.known,
+    seen: c.seen
+  }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    
+    const arr = JSON.parse(raw);
+    const map = new Map(arr.map(x => [x.id, x]));
+    
+    deck.forEach(c => {
+      const m = map.get(c.id);
+      if (m) {
+        c.known = !!m.known;
+        c.seen = m.seen | 0;
+      }
+    });
+  } catch (e) {}
+}
+
+// Swipe-to-grade
+(function() {
+  if (!cardEl) return;
+  
+  let startX = 0, startY = 0, dx = 0, active = false;
+  const THRESH = 90;
+  
+  cardEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    if (document.querySelector('#sheet.open')) return;
+    
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dx = 0;
+    active = true;
+    cardEl.classList.add('swiping');
+  }, { passive: true });
+  
+  cardEl.addEventListener('touchmove', (e) => {
+    if (!active) return;
+    
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    dx = x - startX;
+    const dy = y - startY;
+    
+    if (Math.abs(dy) > Math.abs(dx) + 20) {
+      active = false;
+      cardEl.classList.remove('swiping');
+      cardEl.style.transform = '';
+      return;
+    }
+    
+    cardEl.style.transform = `translateX(${dx}px) rotate(${dx * 0.04}deg)`;
+  }, { passive: true });
+  
+  function endSwipe() {
+    cardEl.classList.remove('swiping');
+    cardEl.style.transform = '';
+  }
+  
+  cardEl.addEventListener('touchend', () => {
+    if (!active) return;
+    active = false;
+    
+    if (dx > THRESH) {
+      cardEl.classList.remove('swipe-left');
+      cardEl.classList.add('swipe-right');
+      setTimeout(() => {
+        cardEl.classList.remove('swipe-right');
+        endSwipe();
+        grade(true);
+      }, 240);
+    } else if (dx < -THRESH) {
+      cardEl.classList.remove('swipe-right');
+      cardEl.classList.add('swipe-left');
+      setTimeout(() => {
+        cardEl.classList.remove('swipe-left');
+        endSwipe();
+        grade(false);
+      }, 240);
+    } else {
+      endSwipe();
+    }
+  }, { passive: true });
+  
+  cardEl.addEventListener('touchcancel', () => {
+    active = false;
+    endSwipe();
+  }, { passive: true });
+})();
+
+// Requeue helpers
+function queueCard(id) {
+  const existing = pending.find(p => p.id === id);
+  if (existing) {
+    existing.due = requeueDistance;
+    return;
+  }
+  pending.push({ id, due: requeueDistance });
+}
+
+function tickPendingAndMaybePop() {
+  if (!pending.length) return -1;
+  
+  for (const p of pending) {
+    if (p.due > 0) p.due--;
+  }
+  
+  const idx = pending.findIndex(p => p.due === 0);
+  if (idx >= 0) {
+    const id = pending.splice(idx, 1)[0].id;
+    const i = deck.findIndex(c => c.id === id);
+    return i;
+  }
+  
+  return -1;
+}
+
+// Audio functions
+async function loadVoices() {
+  return new Promise(res => {
+    const ready = () => {
+      const v = speechSynthesis.getVoices();
+      if (v && v.length) {
+        voices = v;
+        speechSynthesis.removeEventListener('voiceschanged', ready);
+        res();
+      }
+    };
+    
+    speechSynthesis.addEventListener('voiceschanged', ready);
+    ready();
+    
+    setTimeout(() => {
+      voices = speechSynthesis.getVoices();
+      res();
+    }, 800);
+  });
+}
+
+function populateVoiceSelect() {
+  voiceSel.innerHTML = '';
+  const opts = voices.length ? voices : [{ name: 'Default', voiceURI: '' }];
+  
+  const sorted = opts.slice().sort((a, b) => {
+    const la = (a.lang || '').toLowerCase();
+    const lb = (b.lang || '').toLowerCase();
+    const pa = (la.includes('en-ca') || la.includes('en-us')) ? 0 : 1;
+    const pb = (lb.includes('en-ca') || lb.includes('en-us')) ? 0 : 1;
+    return pa - pb || (a.name || '').localeCompare(b.name || '');
+  });
+  
+  for (const v of sorted) {
+    const o = document.createElement('option');
+    o.value = v.voiceURI || v.name || '';
+    o.textContent = v.name ? `${v.name} (${v.lang || ''})` : 'Default';
+    voiceSel.appendChild(o);
+  }
+  
+  if (audioPrefs.voiceURI) {
+    voiceSel.value = audioPrefs.voiceURI;
+  }
+}
+
+function warmUpSpeech() {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    speechSynthesis.cancel();
+  } catch (e) {}
+}
+
+function saveAudioPrefs() {
+  localStorage.setItem(AUDIO_KEY, JSON.stringify(audioPrefs));
+}
+
+function cancelSpeak() {
+  if (speakTimer) {
+    clearTimeout(speakTimer);
+    speakTimer = null;
+  }
+  try {
+    speechSynthesis.cancel();
+  } catch (e) {}
+}
+
+function autoSpeakCurrent(trigger) {
+  if (!('speechSynthesis' in window)) return;
+  
+  const c = deck[cursor];
+  if (!c) return;
+  
+  const text = showingBack ? c.back : c.front;
+  const want = showingBack ? audioPrefs.speakBack : audioPrefs.speakFront;
+  
+  if (!want || !text) {
+    cancelSpeak();
+    return;
+  }
+  
+  const delay = (trigger === 'flip') ? DELAY_FLIP_MS : DELAY_NEXT_MS;
+  cancelSpeak();
+  speakTimer = setTimeout(() => speak(text), delay);
+}
+
+function speak(txt) {
+  try {
+    speechSynthesis.cancel();
+  } catch (e) {}
+  
+  if (!txt) return;
+  
+  const u = new SpeechSynthesisUtterance(txt);
+  u.rate = audioPrefs.rate || 1;
+  
+  const v = voices.find(v => v.voiceURI === audioPrefs.voiceURI || v.name === audioPrefs.voiceURI);
+  if (v) u.voice = v;
+  
+  try {
+    speechSynthesis.pause();
+    speechSynthesis.resume();
+  } catch (e) {}
+  
+  setTimeout(() => {
+    try {
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }, 0);
+}
+
+function normalizeId(raw) {
+  let s = String(raw).trim().toLowerCase();
+  const m = s.match(/(\d+)/);
+  if (m) {
+    return `card${parseInt(m[1], 10)}`;
+  }
+  if (s.startsWith('card')) return s;
+  return s ? `card-${s}` : 'card0';
+}
+
+function parseCSV(str) {
+  const rows = [];
+  let row = [];
+  let cur = '';
+  let i = 0;
+  let inQ = false;
+  
+  while (i < str.length) {
+    const ch = str[i];
+    
+    if (inQ) {
+      if (ch === '"') {
+        if (str[i + 1] === '"') {
+          cur += '"';
+          i += 2;
+          continue;
+        }
+        inQ = false;
+        i++;
+        continue;
+      }
+      cur += ch;
+      i++;
+      continue;
+    } else {
+      if (ch === '"') {
+        inQ = true;
+        i++;
+        continue;
+      }
+      if (ch === ',') {
+        row.push(cur);
+        cur = '';
+        i++;
+        continue;
+      }
+      if (ch === '\n') {
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = '';
+        i++;
+        continue;
+      }
+      if (ch === '\r') {
+        i++;
+        continue;
+      }
+      cur += ch;
+      i++;
+    }
+  }
+  
+  row.push(cur);
+  rows.push(row);
+  
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+}
+
+function escape(s) {
+  return (s || '').replace(/[&<>]/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;'
+  }[m]));
+}
+</script>
+</body>
+</html>
