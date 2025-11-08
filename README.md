@@ -1,5 +1,5 @@
 # Nima Flashcards — README
-Note: Edit the Excel file inside the Excel folder, as it is not possible to make some changes, like highlighting, in CSV. After editing the Excel, save it as CSV and replace the CSV file inside the asset folder.
+**Note:** Edit the Excel file inside the Excel folder, as it is not possible to make some changes, like highlighting, in CSV. After editing the Excel, save it as CSV and replace the CSV file inside the asset folder.
 ## How this works (big picture, in two simple paragraphs)
 This is a single-page web app (`index.html`) you open on your iPhone or laptop. When the page loads, it automatically reads your deck from `assets/cards.csv`. Each row becomes one flashcard with a **front** (question) and a **back** (answer). You flip by tapping the card, and it uses a quick rotate animation so it feels like a real card. If you swipe right, it marks “I know.” If you swipe left, it marks “I don’t know.” Your known/seen progress is saved locally on each device.
 
