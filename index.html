@@ -20,7 +20,7 @@
     .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px;background:var(--bg)}
 
     main.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(12px,2.5vw,20px); will-change: transform;margin-top:16px;}
-    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;min-height:clamp(140px,32vh,300px);padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;display:flex;align-items:center;justify-content:center;white-space: pre-line;}
+    .big{font-size:clamp(19px,3.6vw,30px);line-height:1.35;text-align:center;padding:clamp(12px,2.5vw,18px);user-select:none; cursor:pointer;display:flex;align-items:center;justify-content:center;white-space: pre-line;}
     .img{max-width:100%;max-height:clamp(42vh,50vh,60vh);display:block;margin:8px auto 6px;border-radius:12px;border:1px solid var(--border); cursor:pointer;}
     .muted{color:var(--muted);font-size:12px}
     .grid{display:grid;gap:10px}
@@ -482,11 +482,7 @@ function renderFace(trigger) {
   idxLabel.textContent = c.id;
   face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
   
-  if (showingBack) {
-    showImageForId(c.id);
-  } else {
-    hideImage();
-  }
+  showImageForId(c.id);
   
   updateStats();
   autoSpeakCurrent(trigger);
