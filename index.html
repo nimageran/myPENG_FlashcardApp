@@ -454,6 +454,23 @@ function flip() {
   }, 160);
 }
 
+function renderFace(trigger) {
+  if (cursor < 0) {
+    face.textContent = 'Press Start';
+    return;
+  }
+  
+  const c = deck[cursor];
+  idxLabel.textContent = c.id;
+  face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
+  
+  const targetImageName = showingBack ? c.id : 'F' + c.id;
+  showImageForId(targetImageName);
+  
+  updateStats();
+  autoSpeakCurrent(trigger);
+}
+
 function grade(known) {
   if (cursor < 0) return;
   
@@ -470,22 +487,6 @@ function grade(known) {
   saveProgress();
   updateStats();
   next();
-}
-
-function renderFace(trigger) {
-  if (cursor < 0) {
-    face.textContent = 'Press Start';
-    return;
-  }
-  
-  const c = deck[cursor];
-  idxLabel.textContent = c.id;
-  face.innerHTML = showingBack ? escape(c.back) : escape(c.front);
-  
-  showImageForId(c.id);
-  
-  updateStats();
-  autoSpeakCurrent(trigger);
 }
 
 function hideImage() {
